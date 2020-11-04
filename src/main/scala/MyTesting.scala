@@ -1,7 +1,12 @@
+
 import java.security.MessageDigest
 
-import akka.actor.{Actor, ActorRef, ActorSelection, ActorSystem, Props}
-import lookupdata.{map,getValue}
+import akka.actor.TypedActor.{lookup, self}
+import akka.actor.typed.scaladsl.adapter.ClassicActorRefOps
+import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSelection, ActorSystem, Props}
+import lookupdata.{ getValue, map}
+import lookupdata.create_fingertable
+
 import scala.collection.mutable
 import scala.util.control.Breaks.break
 //https://medium.com/@TamasPolgar/what-to-do-with-5-000-000-akka-actors-381a915a0f78 "referenced for storing data in node actor(hashmap)"
@@ -15,46 +20,27 @@ object MyTesting extends App{
   case class Insert(key:String,value: String)
   case class get_value (key:String) //get the value
   case class insert(key:String , Value:String) //key value pair
-
+  //case class add_node_to_ring(Key: String,ref:ActorRef ,path: ActorPath)
   var map = new mutable.HashMap[String,String]() //stores key with the value of actor reference
 
-  class hmap extends Actor{
-    def receive ={
-      case insert(key,value)=>{
-        map.addOne(key,value)
-        println("Inside the hmap function:  " + self + "    " + map.get(key))
-        lookupdata.map = map
-      }
-    }
-  }
 
-//  def getvalue(Key:String): Unit ={
-//    if(map.contains(Key)){
-//      println(map.get(Key))
-//    }
-//    else {
-//      println("No key found")
-//    }
-//  }
-
-  class akkanode extends Actor{
-    def receive ={
-      case ServerActor(title) =>
-        println(self)
-        println(title)
-    }
-  }
-  class akka extends Actor{
+  class akka extends Actor with ActorLogging{
     var n=0;
-    def receive={
-      case UserActor(title,ref,value) =>
+    def receive= {
+      case UserActor(title, ref, value) =>
         // println(self)
         //  println(title)
 
         //ref!ServerActor(title)
-        ref!lookupdata.Insert(title,value)
+        ref ! lookupdata.Insert(title, value)
+
     }
+
+
+
   }
+
+
   /*
   Approaching HomeWork 3
    */
@@ -72,15 +58,22 @@ object MyTesting extends App{
   //create node_Actors
   def MD5(s:String)={MessageDigest.getInstance("MD5").digest(s.getBytes())}
   var counter=0
+
   for(counter <- 1 to number_nodes) {
     {
       val node_Actors = system.actorOf(Props[lookupdata],"nodeactor"+counter)
-      println("Node created for the ring:   " + node_Actors.path)
+//      println("Node created for the ring:   " + node_Actors.path)
+      //create the ring here
+      var to_behashed = counter.toString;
+      var hashValue=MD5("nodeactor"+to_behashed)
+      //so the finger table will consist of node identifiers and the keys will be stored in the finger table
 
-     // println("The key generated for the given node:  " + hashValue)
+      //Now from here we will start updating the finger table
+      node_Actors!lookupdata.add_nodering(hashValue.toString,node_Actors.path,node_Actors.ref)
     }
 
   }
+
 
   for(counter <- 1 to number_nodes) {
 
@@ -96,7 +89,9 @@ object MyTesting extends App{
     val select_Actor = system.actorSelection("akka://UserServerActors/user/"+"nodeactor"+counter)
     var to_behashed = counter.toString;
     var hashValue=MD5("nodeactor"+to_behashed)
-      select_Actor ! lookupdata.getValue(counter.toString)
+    select_Actor ! lookupdata.getValue(counter.toString)
+
   }
 
 }
+
