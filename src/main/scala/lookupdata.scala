@@ -112,11 +112,11 @@ class lookupdata extends Actor with ActorLogging {
      ref ! create_fingertable(4,key,actorPath) //so we are sending total number of nodes, key and the actorPath
 
       log.info("Update all the tables")
-      actorspath.foreach{
-        path=>
-          var select_to_update = context.actorSelection(path)
-          select_to_update!update_finger_table(store_nodenumbers)
-      }
+//      actorspath.foreach{
+//        path=>
+//          var select_to_update = context.actorSelection(path)
+//          select_to_update!update_finger_table(store_nodenumbers)
+//      }
     }
 
 
@@ -133,8 +133,6 @@ class lookupdata extends Actor with ActorLogging {
       else {
      //   println("No key found")
       }
-    }
-    case get_fingertable()=>{
     }
 
 

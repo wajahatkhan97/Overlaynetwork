@@ -43,7 +43,6 @@ object MyTesting extends App {
 
   }
 
-
   /*
   Approaching HomeWork 3
    */
@@ -51,9 +50,6 @@ object MyTesting extends App {
   //step 2:  Create user actors and load data into servers
   //step 3: Then same user will request data from nodes using a hashed key
   val system = ActorSystem("UserServerActors")
-  //  val userActor = system.actorOf(Props[akka],"UserActor")
-  //  val serverActor = system.actorOf(Props[akka],"ServerActor")
-  //  userActor!UserActor("Hello Server",serverActor)
 
   //creating a hash value
   val number_nodes = 4 //val defines a constant value which cannot be modified once declared
@@ -74,38 +70,32 @@ object MyTesting extends App {
       //create the ring here
       var to_behashed = counter.toString;
       var hashValue = MD5("nodeactor" + to_behashed)
+        println(hashValue(counter).toInt)
       //so the finger table will consist of node identifiers and the keys will be stored in the finger table
       //Now from here we will start updating the finger table
-      node_Actors ! lookupdata.add_nodering(counter.toString, node_Actors.path, node_Actors.ref)
-//      val node_Actors1 = system.actorOf(Props[lookupdata], "nodeactor" + 1)
-//      var to_behashed1 = counter + 1.toString;
-//      var hashValue1 = MD5("nodeactor" + to_behashed1)
-//
-//      node_Actors1 ! lookupdata.add_nodering(counter + 1.toString, node_Actors1.path, node_Actors1.ref)
+      //so the chord use hashed value(nodeID but hashed + the formula) to determine a node designated by the hashed value
+      //and when you want to look for data you can simply look for that hashed value.
+      node_Actors ! lookupdata.add_nodering(counter.toString, node_Actors.path, node_Actors.ref) //have to add separate for hashed keys
+
     }
 
 
     val user_actor = system.actorOf(Props[akka], "useractor" + counter)
        //for (counter <- 0 to number_nodes) {
-
+//so the chord use hashed value(nodeID but hashed + the formula) to determine a node designated by the hashed value
+//and when you want to look for data you can simply look for that hashed value.
       val select_Actor = system.actorSelection("akka://UserServerActors/user/" + "nodeactor" + 0)
       var to_behashed = counter.toString;
-      var hashValue = MD5("nodeactor" + to_behashed)
+    var hashValue = MD5("nodeactor" + to_behashed)
+    println("Here too: " + hashValue(counter).toInt)
+
       user_actor ! UserActor(counter.toString, select_Actor, list_of_names_to_Assign_to_node(counter)) //loading the data into node actors via useractor
 
     //}
 
   }
 }
-//
-//  for(counter <- 1 to number_nodes) {
-//
-//    val select_Actor = system.actorSelection("akka://UserServerActors/user/"+"nodeactor"+counter)
-//    //var to_behashed = counter.toString;
-//    //var hashValue=MD5(to_behashed)
-//    select_Actor ! lookupdata.getValue(counter.toString)
-//
-//  }
+
 
 
 
