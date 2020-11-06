@@ -66,10 +66,10 @@ object MyTesting extends App {
 
   var counter = 0
 
-  //for(counter <- 0 to 1)
+  for(counter <- 0 to 3)
   {
     {
-      val node_Actors = system.actorOf(Props[lookupdata], "nodeactor" + 0)
+      val node_Actors = system.actorOf(Props[lookupdata], "nodeactor" + counter)
       //      println("Node created for the ring:   " + node_Actors.path)
       //create the ring here
       var to_behashed = counter.toString;
@@ -77,23 +77,23 @@ object MyTesting extends App {
       //so the finger table will consist of node identifiers and the keys will be stored in the finger table
       //Now from here we will start updating the finger table
       node_Actors ! lookupdata.add_nodering(counter.toString, node_Actors.path, node_Actors.ref)
-      val node_Actors1 = system.actorOf(Props[lookupdata], "nodeactor" + 1)
-      var to_behashed1 = counter + 1.toString;
-      var hashValue1 = MD5("nodeactor" + to_behashed1)
-
-      node_Actors1 ! lookupdata.add_nodering(counter + 1.toString, node_Actors1.path, node_Actors1.ref)
+//      val node_Actors1 = system.actorOf(Props[lookupdata], "nodeactor" + 1)
+//      var to_behashed1 = counter + 1.toString;
+//      var hashValue1 = MD5("nodeactor" + to_behashed1)
+//
+//      node_Actors1 ! lookupdata.add_nodering(counter + 1.toString, node_Actors1.path, node_Actors1.ref)
     }
 
 
     val user_actor = system.actorOf(Props[akka], "useractor" + counter)
-       for (counter <- 0 to number_nodes) {
+       //for (counter <- 0 to number_nodes) {
 
       val select_Actor = system.actorSelection("akka://UserServerActors/user/" + "nodeactor" + 0)
       var to_behashed = counter.toString;
       var hashValue = MD5("nodeactor" + to_behashed)
       user_actor ! UserActor(counter.toString, select_Actor, list_of_names_to_Assign_to_node(counter)) //loading the data into node actors via useractor
 
-    }
+    //}
 
   }
 }

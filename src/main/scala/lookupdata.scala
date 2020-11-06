@@ -25,6 +25,7 @@ object lookupdata{
   var store_nodenumbers = new ListBuffer[Int]
    var store_temporary_value = 0
   case class get_fingertable()
+
 }
 
 class lookupdata extends Actor with ActorLogging {
@@ -75,25 +76,40 @@ class lookupdata extends Actor with ActorLogging {
 
           }
    //   println(self.path)
-      fingertablemap.foreach( println(_))
+     // fingertablemap.foreach( println(_))
 
 
     }
     case update_finger_table(nodesnumber) =>{ ///nodesID's (0,1)
-       fingertablemap.foreach{
-        which_key=>
-          val greater_equal = nodesnumber.filter(x=>x>=which_key._2) //._2 represents the identifier
+      println(self)
+        //fingertablemap= update(nodesnumber)
 
-            println("inside update finertable: " + greater_equal + "   " + nodesnumber.size)
-       }
-
+     // fingertablemap.foreach( println(_))
     }
+
+//      def update(nodesnumber:ListBuffer[Int]):mutable.HashMap[Int,Int]={
+//          val new_table = fingertablemap.map{
+//          which_key=>
+//            val greater_equal = nodesnumber.filter(x=> x > which_key._2) //._2 represents the identifier
+//
+//             // println("inside update finertable: " + greater_equal + "   " + nodesnumber.size)
+//                if(!greater_equal.isEmpty) {
+//                  which_key._1 -> greater_equal.head
+//                }
+//            else {
+//                  println("else condition: " + nodesnumber.head )
+//                  which_key._1 -> nodesnumber.head
+//                }
+//          }
+//        new_table
+//  }
+
     case add_nodering(key,actorPath,ref) =>{
       store_nodenumbers.addOne(key.toInt)
       actorspath.addOne(actorPath.toString)
       lookup_servernodes.addOne(key->actorPath.toString) //storing server path with key to access (while getting the data)
      // log.info("Node added to the ring")
-     ref ! create_fingertable(2,key,actorPath) //so we are sending total number of nodes, key and the actorPath
+     ref ! create_fingertable(4,key,actorPath) //so we are sending total number of nodes, key and the actorPath
 
       log.info("Update all the tables")
       actorspath.foreach{
