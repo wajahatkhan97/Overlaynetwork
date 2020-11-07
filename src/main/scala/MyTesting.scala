@@ -12,10 +12,10 @@ import scala.util.control.Breaks.break
 //https://medium.com/@TamasPolgar/what-to-do-with-5-000-000-akka-actors-381a915a0f78 "referenced for storing data in node actor(hashmap)"
 object MyTesting extends App {
 
-  var list_of_names_to_Assign_to_node = List("Wajahat", "Umar", "Krunal", "CS441", "myname", "yourname") //fake data stored in nodes actors
+  var list_of_names_to_Assign_to_node = List("Wajahat", "Umar", "Krunal", "CS441", "myname", "yourname") //these will be the values (after hashing them) that we are going to store in our Chord
 
-
-  case class UserActor(title: String, ref: ActorSelection, value: String)
+    var key_actormap = new mutable.HashMap[Int,String]()
+  case class UserActor(title: String, ref: ActorSelection, value: String,key_actorpath:mutable.HashMap[Int,String])
 
   case class ServerActor(title: String)
 
@@ -31,18 +31,17 @@ object MyTesting extends App {
     var n = 0;
 
     def receive = {
-      case UserActor(title, ref, value) =>
+      case UserActor(title, ref, value,key_actorpath) =>
         // println(self)
         //  println(title)
 
         //ref!ServerActor(title)
-        ref ! lookupdata.Insert(title, value)
+        ref ! lookupdata.Find_data(title, ref,key_actorpath)
 
     }
 
 
   }
-
 
   /*
   Approaching HomeWork 3
@@ -51,9 +50,6 @@ object MyTesting extends App {
   //step 2:  Create user actors and load data into servers
   //step 3: Then same user will request data from nodes using a hashed key
   val system = ActorSystem("UserServerActors")
-  //  val userActor = system.actorOf(Props[akka],"UserActor")
-  //  val serverActor = system.actorOf(Props[akka],"ServerActor")
-  //  userActor!UserActor("Hello Server",serverActor)
 
   //creating a hash value
   val number_nodes = 4 //val defines a constant value which cannot be modified once declared
@@ -66,46 +62,41 @@ object MyTesting extends App {
 
   var counter = 0
 
-  //for(counter <- 0 to 1)
-  {
+  for(counter <- 0 to 3) {
     {
-      val node_Actors = system.actorOf(Props[lookupdata], "nodeactor" + 0)
+      val node_Actors = system.actorOf(Props[lookupdata], "nodeactor" + counter)
       //      println("Node created for the ring:   " + node_Actors.path)
       //create the ring here
-      var to_behashed = counter.toString;
-      var hashValue = MD5("nodeactor" + to_behashed)
+      var hashValue = MD5(list_of_names_to_Assign_to_node(counter))
       //so the finger table will consist of node identifiers and the keys will be stored in the finger table
       //Now from here we will start updating the finger table
-      node_Actors ! lookupdata.add_nodering(counter.toString, node_Actors.path, node_Actors.ref)
-      val node_Actors1 = system.actorOf(Props[lookupdata], "nodeactor" + 1)
-      var to_behashed1 = counter + 1.toString;
-      var hashValue1 = MD5("nodeactor" + to_behashed1)
+      //so the chord use hashed value(nodeID but hashed + the formula) to determine a node designated by the hashed value
+      //and when you want to look for data you can simply look for that hashed value.
 
-      node_Actors1 ! lookupdata.add_nodering(counter + 1.toString, node_Actors1.path, node_Actors1.ref)
+    //  println("node:  " + counter + " Will be storing the hashed value: " + list_of_names_to_Assign_to_node(counter) + "  " + Math.abs((hashValue(counter)) % number_nodes).toString)
+      key_actormap.addOne(counter, node_Actors.path.toString) // will be used to later to find the value
+
+      node_Actors ! lookupdata.add_nodering(Math.abs(hashValue(counter)).toString, node_Actors.path, node_Actors.ref, number_nodes, list_of_names_to_Assign_to_node(counter)) //have to add separate for hashed keys
+
     }
 
 
     val user_actor = system.actorOf(Props[akka], "useractor" + counter)
-       for (counter <- 0 to number_nodes) {
+    //for (counter <- 0 to number_nodes) {
+    println(user_actor.path)
+    //so the chord use hashed valu e(nodeID but hashed + the formula) to determine a node designated by the hashed value
+    //and when you want to look for data you can simply look for that hashed value.
+    val select_Actor = system.actorSelection("akka://UserServerActors/user/" + "nodeactor" + 0)
+    var hashValue = MD5("Krunal")
+   // println("Here too: " + Math.abs(hashValue(0) % number_nodes).toString)
 
-      val select_Actor = system.actorSelection("akka://UserServerActors/user/" + "nodeactor" + 0)
-      var to_behashed = counter.toString;
-      var hashValue = MD5("nodeactor" + to_behashed)
-      user_actor ! UserActor(counter.toString, select_Actor, list_of_names_to_Assign_to_node(counter)) //loading the data into node actors via useractor
+    user_actor ! UserActor((Math.abs(hashValue(0))%number_nodes).toString, select_Actor, list_of_names_to_Assign_to_node(counter),key_actormap) //loading the data into node actors via useractor
+  }
 
-    }
 
   }
-}
-//
-//  for(counter <- 1 to number_nodes) {
-//
-//    val select_Actor = system.actorSelection("akka://UserServerActors/user/"+"nodeactor"+counter)
-//    //var to_behashed = counter.toString;
-//    //var hashValue=MD5(to_behashed)
-//    select_Actor ! lookupdata.getValue(counter.toString)
-//
-//  }
+
+
 
 
 
