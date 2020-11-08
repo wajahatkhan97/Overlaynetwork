@@ -2,20 +2,25 @@
 import java.security.MessageDigest
 
 import akka.actor.TypedActor.{context, lookup, self}
+import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.adapter.ClassicActorRefOps
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSelection, ActorSystem, Props}
-import lookupdata.{getValue, map}
-import lookupdata.create_fingertable
+import com.sun.tools.javac.util.ListBuffer
+import com.typesafe.config.ConfigFactory
+import lookupdata.{create_fingertable, getValue, list_of_movies, map}
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
+import scala.math.BigDecimal.int2bigDecimal
 import scala.util.control.Breaks.break
 //https://medium.com/@TamasPolgar/what-to-do-with-5-000-000-akka-actors-381a915a0f78 "referenced for storing data in node actor(hashmap)"
 object MyTesting extends App {
 
-  var list_of_names_to_Assign_to_node = List("Wajahat", "Umar", "Krunal", "CS441", "myname", "yourname") //these will be the values (after hashing them) that we are going to store in our Chord
+  var list_of_names_to_Assign_to_node =  new mutable.ListBuffer[String] //List("object1", "object2", "object3", "object4", "object5", "object6") //these values will be used as he objects
+  var list_of_movies_Titles= new mutable.ListBuffer[String] //these will be the movies titles will be used as the key
 
     var key_actormap = new mutable.HashMap[Int,String]()
-  case class UserActor(title: String, ref: ActorSelection, value: String,key_actorpath:mutable.HashMap[Int,String])
+  case class UserActor(title: String, ref: ActorSelection, value: String,key_actorpath:mutable.HashMap[Int,String],numbernodes:Int)
 
   case class ServerActor(title: String)
 
@@ -25,18 +30,17 @@ object MyTesting extends App {
   case class insert(key: String, Value: String) //key value pair
   //case class add_node_to_ring(Key: String,ref:ActorRef ,path: ActorPath)
   var map = new mutable.HashMap[String, String]() //stores key with the value of actor reference
-
+  val LOGGER = LoggerFactory.getLogger(classOf[Nothing])
+  val server_Data = ConfigFactory.load("servernodes.conf").getConfig("server_data")
+  val worker_Data = ConfigFactory.load("workernodes.conf").getConfig("worker_data")
 
   class akka extends Actor with ActorLogging {
     var n = 0;
 
     def receive = {
-      case UserActor(title, ref, value,key_actorpath) =>
-        // println(self)
-        //  println(title)
+      case UserActor(title, ref, value,key_actorpath,numbernodes) =>
 
-        //ref!ServerActor(title)
-        ref ! lookupdata.Find_data(title, ref,key_actorpath)
+        ref ! lookupdata.Find_data(title, ref,key_actorpath,numbernodes)
 
     }
 
@@ -50,49 +54,60 @@ object MyTesting extends App {
   //step 2:  Create user actors and load data into servers
   //step 3: Then same user will request data from nodes using a hashed key
   val system = ActorSystem("UserServerActors")
-
+//"movie1","movie2","movie3","movie4","movie5"
   //creating a hash value
-  val number_nodes = 4 //val defines a constant value which cannot be modified once declared
-  val user_actor = 4
+  val number_nodes = server_Data.getInt("num-nodes") //val defines a constant value which cannot be modified once declared
+  val user_actor = worker_Data.getInt("num-nodes")
+  val size_of_movie_list = server_Data.getConfigList("movie-list").get(0).getString("size")
+  //add the movie titles to buffered list
+  for(counter <- 1 to size_of_movie_list.toInt) {
+    list_of_movies_Titles.addOne(server_Data.getConfigList("movie-list").get(0).getString(counter.toString))
+  }
+  // add the movie object to buffered list
 
+  for(counter <- 1 to size_of_movie_list.toInt) {
+    list_of_names_to_Assign_to_node.addOne(server_Data.getConfigList("movie-objects").get(0).getString(counter.toString))
+  }
   //create node_Actors
   def MD5(s: String) = {
     MessageDigest.getInstance("MD5").digest(s.getBytes())
   }
 
   var counter = 0
+  LOGGER.info("Generating Server(Actor) Nodes")
 
-  for(counter <- 0 to 3) {
+  for(counter <- 0 to number_nodes) {
     {
+      Thread.sleep(1000)
+
       val node_Actors = system.actorOf(Props[lookupdata], "nodeactor" + counter)
       //      println("Node created for the ring:   " + node_Actors.path)
       //create the ring here
-      var hashValue = MD5(list_of_names_to_Assign_to_node(counter))
-      //so the finger table will consist of node identifiers and the keys will be stored in the finger table
-      //Now from here we will start updating the finger table
-      //so the chord use hashed value(nodeID but hashed + the formula) to determine a node designated by the hashed value
-      //and when you want to look for data you can simply look for that hashed value.
+      var hashValue_movietitle = MD5(list_of_movies_Titles(counter))
+      var hashValue_movieobjects = MD5(list_of_names_to_Assign_to_node(counter))
 
-    //  println("node:  " + counter + " Will be storing the hashed value: " + list_of_names_to_Assign_to_node(counter) + "  " + Math.abs((hashValue(counter)) % number_nodes).toString)
+      //  println("node:  " + counter + " Will be storing the hashed value: " + list_of_names_to_Assign_to_node(counter) + "  " + Math.abs((hashValue(counter)) % number_nodes).toString)
       key_actormap.addOne(counter, node_Actors.path.toString) // will be used to later to find the value
 
-      node_Actors ! lookupdata.add_nodering(Math.abs(hashValue(counter)).toString, node_Actors.path, node_Actors.ref, number_nodes, list_of_names_to_Assign_to_node(counter)) //have to add separate for hashed keys
+      node_Actors ! lookupdata.add_nodering(Math.abs(hashValue_movietitle(counter)%number_nodes).toString, Math.abs(hashValue_movieobjects(counter)).toString, counter,node_Actors.path, node_Actors.ref, number_nodes, list_of_names_to_Assign_to_node(counter)) //have to add separate for hashed keys
 
     }
-
-
-    val user_actor = system.actorOf(Props[akka], "useractor" + counter)
-    //for (counter <- 0 to number_nodes) {
-    println(user_actor.path)
-    //so the chord use hashed valu e(nodeID but hashed + the formula) to determine a node designated by the hashed value
-    //and when you want to look for data you can simply look for that hashed value.
-    val select_Actor = system.actorSelection("akka://UserServerActors/user/" + "nodeactor" + 0)
-    var hashValue = MD5("Krunal")
-   // println("Here too: " + Math.abs(hashValue(0) % number_nodes).toString)
-
-    user_actor ! UserActor((Math.abs(hashValue(0))%number_nodes).toString, select_Actor, list_of_names_to_Assign_to_node(counter),key_actormap) //loading the data into node actors via useractor
   }
+    //reason for creating multiple actor is that each worker actor will look for different data.
+  LOGGER.info("Generating worker nodes to find data")
 
+    for(counter <- 0 to user_actor) {
+    Thread.sleep(1000)
+      val user_actor = system.actorOf(Props[akka], "useractor" + counter)
+        //for (counter <- 0 to number_nodes) {
+      //  println(user_actor.path)
+        val select_Actor = system.actorSelection(key_actormap.get(counter).get) //getting the starting path to search the Ring
+        var hashValue = MD5(list_of_movies_Titles(counter))
+        // println("Here too: " + Math.abs(hashValue(0) % number_nodes).toString)
+        user_actor ! UserActor((Math.abs(hashValue(0))%number_nodes).toString, select_Actor, list_of_names_to_Assign_to_node(counter), key_actormap,number_nodes) //loading the data into node actors via useractor
+        //}
+      }
+  system.terminate()
 
   }
 
