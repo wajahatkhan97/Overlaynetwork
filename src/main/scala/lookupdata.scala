@@ -3,7 +3,7 @@ import java.lang.System.Logger
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSelection, Props}
 import MyTesting.{MD5, UserActor, akka, list_of_names_to_Assign_to_node, map, number_nodes, server_Data, size_of_movie_list, system}
 import com.typesafe.config.ConfigFactory
-import lookupdata.{Find_data, actorspath, add_nodering, create_fingertable, getValue, get_fingertable, list_of_movies, store_nodenumbers, store_temporary_value, update_finger_table}
+import lookupdata.{Find_data, actorspath, add_nodering, create_fingertable, getValue, get_fingertable, list_of_movies, m, store_nodenumbers, store_temporary_value, update_finger_table}
 
 import scala.Int.{int2double, int2long}
 import scala.collection.mutable
@@ -31,8 +31,8 @@ object lookupdata{
   val worker_Data = ConfigFactory.load("workernodes.conf").getConfig("worker_data")
   val size_of_movie_list = worker_Data.getConfigList("movie-values").get(0).getString("size")
   var i=0
-
-  for(counter <- 1 to size_of_movie_list.toInt) {
+  var m = worker_Data.getInt("m_value");
+  for(counter <- 0 to size_of_movie_list.toInt) {
     list_of_movies.addOne(worker_Data.getConfigList("movie-values").get(0).getString(counter.toString))
   }
 }
@@ -60,17 +60,16 @@ class lookupdata extends Actor with ActorLogging {
       //generate finger table using the formula ("remember table contains the identifier and the key
           for(counter <- 0 to  totalnodes){ //instead of 3 we will consider m-1
 
-                     store_temporary_value=((Integer.parseInt(hashvalue)+scala.math.pow(2, counter)) % scala.math.pow(2,8)).toInt
+                     store_temporary_value=((Integer.parseInt(hashvalue)+scala.math.pow(2, counter)) % scala.math.pow(2,m)).toInt
 
-                    fingertablemap.addOne(counter,((Integer.parseInt(object_hashed)+scala.math.pow(2, counter)) % scala.math.pow(2,8)).toInt)
-                    fingertablemap_for_identifier_successor.addOne(((Integer.parseInt(object_hashed)+scala.math.pow(2, counter)) % scala.math.pow(2,8)).toInt,counter)//this map will add (the identifier and its successor)
+                    fingertablemap.addOne(counter,((Integer.parseInt(object_hashed)+scala.math.pow(2, counter)) % scala.math.pow(2,m)).toInt)
+                    fingertablemap_for_identifier_successor.addOne(((Integer.parseInt(object_hashed)+scala.math.pow(2, counter)) % scala.math.pow(2,m)).toInt,counter)//this map will add (the identifier and its successor)
 
           }
       }
     case update_finger_table(nodesnumber) =>{ ///nodesID's (0,1)
         fingertablemap_for_identifier_successor= update(nodesnumber,number_nodes) //update the successors
-      //  println(self)
-      //fingertablemap_for_identifier_successor.foreach(println(_))
+
     }
 //most likely for project (also do the same thing for node failure)
       def update(nodesnumber:ListBuffer[Int],totalnodes:Int):mutable.HashMap[Int,Int]={
@@ -136,17 +135,17 @@ class lookupdata extends Actor with ActorLogging {
           key = fingertablemap.get(counter)
            */
             var temp_key1=0
-            for (counter <- 0 to numbernodes) {
-              temp_key = fingertablemap.get(counter).get
-              if (temp_key % numbernodes == key.toInt) { //meaning go to that particular values successor
-                temp_key1 = fingertablemap.get(counter).get
-              } else {
-                temp_key = -1
-              }
+          //  for (counter <- 0 to numbernodes) {
+              temp_key = fingertablemap.get(key.toInt).get
+//              if (temp_key % numbernodes == key.toInt) { //meaning go to that particular values successor
+//                temp_key1 = fingertablemap.get(counter).get
+//              } else {
+//                temp_key = -1
+//              }
 
-            }
+          //  }
             if (temp_key!= -1) {
-              var successor_node = fingertablemap_for_identifier_successor(temp_key1) //gives me the successor of the identifier (or computing nodes)
+              var successor_node = fingertablemap_for_identifier_successor(temp_key) //gives me the successor of the identifier (or computing nodes)
               //  fingertablemap_for_identifier_successor.foreach(println(_))
               if (successor_node == numbernodes) // 3 is representing total nodes (must be replaced by total number of nodes)
               {

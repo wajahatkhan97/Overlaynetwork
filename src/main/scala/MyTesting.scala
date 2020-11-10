@@ -74,7 +74,7 @@ object MyTesting extends App {
   }
 
   var counter = 0
-  LOGGER.info("Generating Server(Actor) Nodes")
+  LOGGER.info("Creating Server(Actor) Nodes")
 
   for(counter <- 0 to number_nodes) {
     {
@@ -94,7 +94,7 @@ object MyTesting extends App {
     }
   }
     //reason for creating multiple actor is that each worker actor will look for different data.
-  LOGGER.info("Generating worker nodes to find data")
+  LOGGER.info("Creating worker nodes to find data")
 
     for(counter <- 0 to user_actor) {
     Thread.sleep(1000)
