@@ -44,7 +44,6 @@ object MyTesting extends App {
 
     }
 
-
   }
 
   /*
@@ -74,41 +73,47 @@ object MyTesting extends App {
   }
 
   var counter = 0
-  LOGGER.info("Creating Server(Actor) Nodes")
+  createserver()
+  def createserver()= {
+    LOGGER.info("Creating Server(Actor) Nodes")
 
-  for(counter <- 0 to number_nodes) {
-    {
-      Thread.sleep(1000)
+    for (counter <- 0 to number_nodes) {
+      {
+        Thread.sleep(1500) //1.5 sec delay
 
-      val node_Actors = system.actorOf(Props[lookupdata], "nodeactor" + counter)
-      //      println("Node created for the ring:   " + node_Actors.path)
-      //create the ring here
-      var hashValue_movietitle = MD5(list_of_movies_Titles(counter))
-      var hashValue_movieobjects = MD5(list_of_names_to_Assign_to_node(counter))
+        val node_Actors = system.actorOf(Props[lookupdata], "nodeactor" + counter)
+        //      println("Node created for the ring:   " + node_Actors.path)
+        //create the ring here
+        var hashValue_movietitle = MD5(list_of_movies_Titles(counter))
+        var hashValue_movieobjects = MD5(list_of_names_to_Assign_to_node(counter))
 
-      //  println("node:  " + counter + " Will be storing the hashed value: " + list_of_names_to_Assign_to_node(counter) + "  " + Math.abs((hashValue(counter)) % number_nodes).toString)
-      key_actormap.addOne(counter, node_Actors.path.toString) // will be used to later to find the value
+        //  println("node:  " + counter + " Will be storing the hashed value: " + list_of_names_to_Assign_to_node(counter) + "  " + Math.abs((hashValue(counter)) % number_nodes).toString)
+        key_actormap.addOne(counter, node_Actors.path.toString) // will be used to later to find the value
 
-      node_Actors ! lookupdata.add_nodering(Math.abs(hashValue_movietitle(counter)%number_nodes).toString, Math.abs(hashValue_movieobjects(counter)).toString, counter,node_Actors.path, node_Actors.ref, number_nodes, list_of_names_to_Assign_to_node(counter)) //have to add separate for hashed keys
+        node_Actors ! lookupdata.add_nodering(Math.abs(hashValue_movietitle(0) % number_nodes).toString, Math.abs(hashValue_movieobjects(counter)).toString, counter, node_Actors.path, node_Actors.ref, number_nodes, list_of_names_to_Assign_to_node(counter)) //have to add separate for hashed keys
 
+      }
     }
   }
+  //
     //reason for creating multiple actor is that each worker actor will look for different data.
-  LOGGER.info("Creating worker nodes to find data")
+    createuser()
+    def createuser()= {
+      LOGGER.info("Creating worker nodes to find data")
 
-    for(counter <- 0 to user_actor) {
-    Thread.sleep(1000)
-      val user_actor = system.actorOf(Props[akka], "useractor" + counter)
+      for (counter <- 1 to user_actor) {
+        Thread.sleep(2000)
+        val user_actor = system.actorOf(Props[akka], "useractor" + counter)
         //for (counter <- 0 to number_nodes) {
-      //  println(user_actor.path)
-        val select_Actor = system.actorSelection(key_actormap.get(counter).get) //getting the starting path to search the Ring
-        var hashValue = MD5(list_of_movies_Titles(counter))
-        // println("Here too: " + Math.abs(hashValue(0) % number_nodes).toString)
-        user_actor ! UserActor((Math.abs(hashValue(0))%number_nodes).toString, select_Actor, list_of_names_to_Assign_to_node(counter), key_actormap,number_nodes) //loading the data into node actors via useractor
+        //  println(user_actor.path)
+        val select_Actor = system.actorSelection(key_actormap.get(0).get) //getting the starting path to search the Ring
+        var hashValue = MD5(list_of_movies_Titles(4))
+        //this way we might produce multiple result for same value
+        user_actor ! UserActor((Math.abs(hashValue(0)) % number_nodes).toString, select_Actor, list_of_names_to_Assign_to_node(counter), key_actormap, number_nodes) //loading the data into node actors via useractor
         //}
       }
+    }
   system.terminate()
-
   }
 
 
