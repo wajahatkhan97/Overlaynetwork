@@ -7,7 +7,7 @@ import akka.actor.typed.scaladsl.adapter.ClassicActorRefOps
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSelection, ActorSystem, Props}
 import com.sun.tools.javac.util.ListBuffer
 import com.typesafe.config.ConfigFactory
-import lookupdata.{create_fingertable, getValue, list_of_movies, map}
+import lookupdata.{create_fingertable, list_of_movies, map}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
@@ -24,10 +24,7 @@ object MyTesting extends App {
 
   case class ServerActor(title: String)
 
-  case class Insert(key: String, value: String)
-
   case class get_value(key: String) //get the value
-  case class insert(key: String, Value: String) //key value pair
   //case class add_node_to_ring(Key: String,ref:ActorRef ,path: ActorPath)
   var map = new mutable.HashMap[String, String]() //stores key with the value of actor reference
   val LOGGER = LoggerFactory.getLogger(classOf[Nothing])

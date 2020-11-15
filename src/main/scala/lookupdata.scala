@@ -3,7 +3,7 @@ import java.lang.System.Logger
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSelection, Props}
 import MyTesting.{MD5, UserActor, akka, list_of_names_to_Assign_to_node, map, number_nodes, server_Data, size_of_movie_list, system}
 import com.typesafe.config.ConfigFactory
-import lookupdata.{Find_data, actorspath, add_nodering, create_fingertable, getValue, get_fingertable, list_of_movies, m, store_nodenumbers, store_temporary_value, update_finger_table}
+import lookupdata.{Find_data, actorspath, add_nodering, create_fingertable, list_of_movies, m, store_nodenumbers, store_temporary_value, update_finger_table}
 
 import scala.Int.{int2double, int2long}
 import scala.collection.mutable
@@ -13,11 +13,8 @@ import scala.collection.mutable.ListBuffer
 //Chord Implementation idea was from "Mr.Abhijeet"  .
 */
 object lookupdata{
-  case class getValue(Key:String)
   case class Find_data(key:String , ref:ActorSelection,key_Actor:mutable.HashMap[Int,String],numbernodes:Int) //key value pair
   var map = new mutable.HashMap[String,String]()
-  case class find_successor() ////the hashed key user request for will be looked into each of the finger_table and data will be retrieved from there
-  case class find_predecessor()
   case class update_finger_table(nodesnumber:ListBuffer[Int],totalnode:Int) //updating finger table comes in when a new node joins so that you update in the current node
   case class create_fingertable(totalnodes:Int,hashvalue:String,object_hashed:String,actorPath: ActorPath) //finger table will contains the immediate successors (atleast 2) of our current node
   var num_of_nodes_in_ring=0;
@@ -25,7 +22,6 @@ object lookupdata{
   var actorspath = new mutable.ListBuffer[String] //List Buffer gives constant time
   var store_nodenumbers = new ListBuffer[Int]
   var store_temporary_value = 0
-  case class get_fingertable()
   var list_of_movies= new ListBuffer[String]//List("movie1 computing node","movie2 computing node","movie3 computing node","movie4 computing node","movie5 computing node")
   val worker_Data = ConfigFactory.load("workernodes.conf").getConfig("worker_data")
   val size_of_movie_list = worker_Data.getConfigList("movie-values").get(0).getString("size")

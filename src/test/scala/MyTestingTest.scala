@@ -28,9 +28,7 @@ class MyTestingTest extends ScalaTestWithActorTestKit with AnyWordSpecLike{
   "create a node and check if it is added to ring properly" in {
     var list_of_names_to_Assign_to_node =  new mutable.ListBuffer[String] //List("object1", "object2", "object3", "object4", "object5", "object6") //these values will be used as he objects
     list_of_names_to_Assign_to_node.addOne("movie1")
-    def MD5(s: String) = {
-            MessageDigest.getInstance("MD5").digest(s.getBytes())
-          }
+
           val system = ActorSystem("UserServerActors")
       val counter= 0
           val node_Actors = system.actorOf(Props[lookupdata], "nodeactor" + counter)
