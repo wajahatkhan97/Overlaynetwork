@@ -1,9 +1,8 @@
-import java.lang.System.Logger
 
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSelection, Props}
-import MyTesting.{MD5, UserActor, akka, list_of_names_to_Assign_to_node, map, number_nodes, server_Data, size_of_movie_list, system}
+import MyTesting.{LOGGER, MD5, akka, server_Data, system}
 import com.typesafe.config.ConfigFactory
-import lookupdata.{Find_data, actorspath, add_nodering, create_fingertable, list_of_movies, m, store_nodenumbers, store_temporary_value, update_finger_table}
+import lookupdata.{Find_data, coordinate_zone, count_nodes_in_bootstrapmap, create_zone, create_zone_bootstrap, multiarray, print_Space, store_nodes}
 
 import scala.Int.{int2double, int2long}
 import scala.collection.mutable
@@ -14,154 +13,86 @@ import scala.collection.mutable.ListBuffer
 */
 object lookupdata{
   case class Find_data(key:String , ref:ActorSelection,key_Actor:mutable.HashMap[Int,String],numbernodes:Int) //key value pair
-  var map = new mutable.HashMap[String,String]()
-  case class update_finger_table(nodesnumber:ListBuffer[Int],totalnode:Int) //updating finger table comes in when a new node joins so that you update in the current node
-  case class create_fingertable(totalnodes:Int,hashvalue:String,object_hashed:String,actorPath: ActorPath) //finger table will contains the immediate successors (atleast 2) of our current node
-  var num_of_nodes_in_ring=0;
-  case class add_nodering(Key:String,object_hashed: String,nodenumber:Int,actorPath: ActorPath,ref: ActorRef,totalnodes:Int,add_data:String)
-  var actorspath = new mutable.ListBuffer[String] //List Buffer gives constant time
-  var store_nodenumbers = new ListBuffer[Int]
-  var store_temporary_value = 0
-  var list_of_movies= new ListBuffer[String]//List("movie1 computing node","movie2 computing node","movie3 computing node","movie4 computing node","movie5 computing node")
-  val worker_Data = ConfigFactory.load("workernodes.conf").getConfig("worker_data")
-  val size_of_movie_list = worker_Data.getConfigList("movie-values").get(0).getString("size")
-  var i=0
-  var m = worker_Data.getInt("m_value");
-  for(counter <- 0 to size_of_movie_list.toInt) {
-    list_of_movies.addOne(worker_Data.getConfigList("movie-values").get(0).getString(counter.toString))
+  case class create_zone_bootstrap(x:Int,y:Int,path:ActorPath)
+  case class create_zone(x:Int,y:Int)
+
+  var x = 10; //width
+  var y = 10; //height
+  var count_nodes_in_bootstrapmap=0
+  var coordinate_zone = new mutable.HashMap[String,ListBuffer[Int]]()
+  var store_nodes = new mutable.HashMap[Int,String]()
+
+  //2-D ARRAY
+  val multiarray = Array.ofDim[Int](5,5)
+  for(i<-0 to 4)
+    {
+      for(j<-0 to 4)
+        {
+          multiarray(i)(j)= 0
+        }
+    }
+  def print_Space()= {
+    for(i<-0 to 4)
+    {
+      for(j<-0 to 4) {
+        {
+          print(" " + multiarray(i)(j) + " ")
+        }
+      }
+      println()
+    }
   }
 }
 
+/*
+CAN Implemetation approach
+
+create a rectangle with bootstrap node
+currently the bootstrap node posses entire space lets say some node wants to
+you will split the zone depending on the X value of the joining node
+
+ */
+
+
+
 class lookupdata extends Actor with ActorLogging {
 
-  var lookup_servernodes = new mutable.HashMap[String,String]
-  var counter =0
-  var i =0
-  var fingertablemap = new mutable.HashMap[Int,Int]()
-  var fingertablemap_for_identifier_successor = new mutable.HashMap[Int,Int]()
+//how about if we maintain a map for each coordinate and their zone limits
 
-  var store_data = new ListBuffer[String]
-  var actual_store_data = new ListBuffer[String]
+  var list = new ListBuffer[Int];
+  def receive = {
 
-  def receive ={
-    case create_fingertable(totalnodes,hashvalue,object_hashed,actorPath) =>{
+    case create_zone_bootstrap(x,y,path)=>{
 
+      LOGGER.info("Zone created")
+        multiarray(x)(y) = 100 //originally we will store the key,value index here but for now store any random value
+      /*
+      so we have to pass a key and in the given index we will store a map<K,V>
 
-      //so our approach is basically we will create finger table for each node
-      //we also update the existing one(s) all the previous nodes created (node joining requires to keep track of the predecessor but we are
-      // keeping track of all paths and with them we are retrieving finger tables and updating them
-      // (this part was required in Project but we are doing it here)
-      log.info("Generating finger table for Node: " + self.path)
-      //generate finger table using the formula ("remember table contains the identifier and the key
-      for(counter <- 0 to  totalnodes){ //instead of 3 we will consider m-1
-
-        store_temporary_value=((Integer.parseInt(hashvalue)+scala.math.pow(2, counter)) % scala.math.pow(2,m)).toInt
-
-        fingertablemap.addOne(counter,((Integer.parseInt(object_hashed)+scala.math.pow(2, counter)) % scala.math.pow(2,m)).toInt)
-        fingertablemap_for_identifier_successor.addOne(((Integer.parseInt(object_hashed)+scala.math.pow(2, counter)) % scala.math.pow(2,m)).toInt,counter)//this map will add (the identifier and its successor)
-
-      }
-    }
-    case update_finger_table(nodesnumber,totalnodes) =>{ ///nodesID's (0,1)
-      fingertablemap_for_identifier_successor= update(nodesnumber,totalnodes) //update the successors
+      store all the nodes in a list and then randomly choose a number
+      then use that number to get the index from the list so this way you will be accessing the current active node randomly
+       */
+      LOGGER.info(Integer.toString(multiarray(x)(y)))
+      list.addOne(5)
+      list.addOne(5)
+      coordinate_zone.put("BootstrapNode",list)
+        store_nodes.put(count_nodes_in_bootstrapmap,path.toString()) //store the nodes
+      LOGGER.info("So How many nodes we have now in the list returned by bootstrap: " + store_nodes)
+      count_nodes_in_bootstrapmap+=1;
 
     }
-      //most likely for project (also do the same thing for node failure)
-      def update(nodesnumber:ListBuffer[Int],totalnodes:Int):mutable.HashMap[Int,Int]={
-        val new_table = fingertablemap_for_identifier_successor.map{
-          which_key=>
-            val greater_equal = nodesnumber.filter(x=> x > (which_key._1%totalnodes)) //._1 represents the objectvalue%totalnumnodes to get the computing nodes and set successor according to it
-            // println("inside update finertable: " + greater_equal + "   " + nodesnumber.size)
-            //  println(greater_equal)
-            if(!greater_equal.isEmpty) {
-              which_key._1 -> greater_equal.head
-            }
-            else {
-              which_key._1 -> nodesnumber.head
-            }
-        }
-        new_table
-      }
 
-    case add_nodering(key,object_hashed,nodenumber,actorPath,ref,totalnodes,add_data) =>{
-      store_nodenumbers.addOne(nodenumber)
-      actorspath.addOne(actorPath.toString)
-      lookup_servernodes.addOne(key->actorPath.toString) //storing server path with key to access (while getting the data)
-      // log.info("Node added to the ring")
-      store_data.addOne(key) //so add the data (this is the data we will retrieve later on
-      actual_store_data.addOne(list_of_movies(nodenumber)) //store the movie value in computing nodes
-      ref ! create_fingertable(totalnodes,key,object_hashed,actorPath) //so we are sending total number of nodes, key and the actorPath
-      //this approach comes in handy while looking up for data via the actors
-      //println("size of actors path: " + actorspath.length)
-      actorspath.foreach{
-        path=>
-          log.info("Updating table for node : " + path)
-          var select_to_update = context.actorSelection(path)
-          select_to_update!update_finger_table(store_nodenumbers,totalnodes)
+    case create_zone(x,y) =>{
 
-      }
+    // So, this part basically just notifies my bootstrap node about the newly created node
+      val selection = system.actorSelection(store_nodes(0)); //this is bootstrap node //domain name basically resolves to the IP address
+        selection!create_zone_bootstrap(0,0,self.path) //so self.path represents the newly created node
+      LOGGER.info("So How many nodes we have now in the list returned by bootstrap: " + store_nodes.size)
     }
 
+    case Find_data(key, ref, keyactor_path, numbernodes) => {
 
-
-    case Find_data(key,ref,keyactor_path,numbernodes) =>{
-
-
-      var temp_key = key.toInt
-
-      if(store_data.contains(key)){
-        log.info("Found the value..." + actual_store_data(0))
-        Thread.sleep(500) //wait before showing the data
-      }
-      if(i==numbernodes&&store_data.contains(key)==false) //if the temp key reaches to the max number and the data is not there that means data doesn't exist cause we searched all the nodes via table fingers
-      {
-        log.info("Data does not exist search all the nodes")
-      }
-      else {
-        if( fingertablemap.contains(key.toInt) && !store_data.contains(key)) {
-          //println("Yeah node 2 have this value")
-          //so here now I will get the successor and I will check if the desired data exist in that node if not then I will move on to the succesor of the current node
-          /*
-        say key is 0 then our successor is 1 or 0 (say its 0) then I will look for data in Successor 1 by calling its node if the data exist there then okay other wise we will move on to its successor
-        key = fingertablemap.get(counter)
-         */
-          var temp_key1=0
-          //  for (counter <- 0 to numbernodes) {
-          temp_key = fingertablemap.get(key.toInt).get
-
-          if (temp_key!= -1) {
-            var successor_node = fingertablemap_for_identifier_successor(temp_key) //gives me the successor of the identifier (or computing nodes)
-            //  fingertablemap_for_identifier_successor.foreach(println(_))
-            if (successor_node == numbernodes) // 3 is representing total nodes (must be replaced by total number of nodes)
-            {
-              i = successor_node
-              var store_path = context.actorSelection(actorspath(successor_node))
-
-              //log.info(store_path + "   " + "It should be node" + successor_node + " : " + actorspath(successor_node))
-              //a better idea is to just create a simple list of actor paths and the retrieve the value from the index (time will be constant too when it comes to big data set)
-              store_path ! Find_data(successor_node.toString, store_path, keyactor_path, numbernodes)
-
-            } else {
-              i = successor_node
-              var store_path = context.actorSelection(actorspath(successor_node))
-             // log.info(store_path + "   " + "It should be node" + successor_node + " : " + actorspath(successor_node))
-              //a better idea is to just create a simple list of actor paths and the retrieve the value from the index (time will be constant too when it comes to big data set)
-              store_path ! Find_data(successor_node.toString, store_path, keyactor_path, numbernodes)
-            }
-          }
-        }
-        else {
-
-          //  log.info("nope Not in this node moving to next node")
-          if (i != numbernodes) {
-            var store_path = context.actorSelection(actorspath(i+1))
-            store_path ! Find_data(i.toString, store_path, keyactor_path, numbernodes)
-          }
-        }
-      }
     }
-
 
   }
-
 }
