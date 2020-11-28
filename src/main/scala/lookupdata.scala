@@ -71,6 +71,16 @@ class lookupdata extends Actor with ActorLogging {
 
       store all the nodes in a list and then randomly choose a number
       then use that number to get the index from the list so this way you will be accessing the current active node randomly
+
+       For Split
+
+       to check wether we should do a vertical or horizontal
+       For vertical:
+                We will check if the new node point is parallel to the current node (meaning if its not the same column then vertical split)
+       For Horizontal:
+                We will check if the new node point is below the current node (meaning if its in the same column then Horizontal split)
+
+        Also, make sure to check we don't cross other nodes zone  (check their zones and compare with yours using the map that stores all the info)
        */
       LOGGER.info(Integer.toString(multiarray(x)(y)))
       list.addOne(5)
@@ -82,14 +92,22 @@ class lookupdata extends Actor with ActorLogging {
 
     }
 
-    case create_zone(x,y) =>{
 
+    case create_zone(x,y) =>{
     // So, this part basically just notifies my bootstrap node about the newly created node
       val selection = system.actorSelection(store_nodes(0)); //this is bootstrap node //domain name basically resolves to the IP address
-        selection!create_zone_bootstrap(0,0,self.path) //so self.path represents the newly created node
+        selection!create_zone_bootstrap(x,y,self.path) //so self.path represents the newly created node
       LOGGER.info("So How many nodes we have now in the list returned by bootstrap: " + store_nodes.size)
-    }
 
+       var new_list= return_list() //returns the current active node map
+        var random = scala.util.Random
+      LOGGER.info("The generated random number is: " + new_list(0) + " " + random)
+    }
+      def return_list():mutable.HashMap[Int,String]={
+
+        return store_nodes //this will return the map that bootstrap node contains of all the active current active nodes.
+        //random number generator will be work as key for this map
+      }
     case Find_data(key, ref, keyactor_path, numbernodes) => {
 
     }

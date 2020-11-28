@@ -1,6 +1,6 @@
 import java.security.MessageDigest
 
-import MyTesting.{MD5, UserActor, akka, key_actormap, list_of_movies_Titles, list_of_names_to_Assign_to_node, number_nodes, system}
+import MyTesting.{MD5, akka, system}
 import _root_.akka.actor.{ActorSystem, Props}
 import _root_.akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import _root_.akka.actor.typed.scaladsl.adapter.ClassicActorRefOps
