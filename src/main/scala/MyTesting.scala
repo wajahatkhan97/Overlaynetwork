@@ -87,7 +87,7 @@ once we return the list then we will add the new joining node to the list
     implicit val timeout = Timeout(5 seconds)
 
     val node = system.actorOf(Props[lookupdata],"nodeactor")
-    node!lookupdata.create_zone(1,1)
+    node!lookupdata.create_zone(3,2)
 
   }
 
