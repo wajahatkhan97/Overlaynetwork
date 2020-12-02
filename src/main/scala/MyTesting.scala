@@ -62,7 +62,7 @@ object MyTesting extends App {
     var hashValue = MD5(Ip_address)
         DNS_map.put(0,Bootstrap_node.path.toString)
 
-    Bootstrap_node! lookupdata.create_zone_bootstrap(0,0,Bootstrap_node.path)
+    Bootstrap_node! lookupdata.create_zone_bootstrap(3,2,Bootstrap_node.path)
 /*
 //Bootstrap_node_m(Bootstrap_node.path.toString,Bootstrap_node.ref)
 we also have to consider the possibility of node leaving the zone. So split it in such order that if any node leaves the space we can re-merge the zones.
@@ -87,11 +87,33 @@ once we return the list then we will add the new joining node to the list
     implicit val timeout = Timeout(5 seconds)
 
     val node = system.actorOf(Props[lookupdata],"nodeactor")
-    node!lookupdata.create_zone(1,1)
+    node!lookupdata.create_zone(2,1)
 
   }
+  createserver_1()
 
+  def createserver_1()= {
+    LOGGER.info("Creating Server(Actor) Nodes")
 
+    Thread.sleep(1500) //1.5 sec delay
+    implicit val timeout = Timeout(5 seconds)
+
+    val node = system.actorOf(Props[lookupdata],"nodeactor"+1)
+    node!lookupdata.create_zone(1,2)
+
+  }
+    //for horizontal split
+  createserver_2()
+  def createserver_2()= {
+    LOGGER.info("Creating Server(Actor) Nodes")
+
+    Thread.sleep(1500) //1.5 sec delay
+    implicit val timeout = Timeout(5 seconds)
+
+    val node = system.actorOf(Props[lookupdata],"nodeactor"+2)
+    node!lookupdata.create_zone(1,3)
+
+  }
 
   }
 

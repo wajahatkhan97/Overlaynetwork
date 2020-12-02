@@ -1,8 +1,7 @@
-
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSelection, Props}
 import MyTesting.{LOGGER, MD5, akka, server_Data, system}
 import com.typesafe.config.ConfigFactory
-import lookupdata.{Find_data, actual_coordinate, actual_coordinate_zone, check_update_zone, coordinate_list, coordinate_zone, count_nodes_in_bootstrapmap, create_zone, create_zone_bootstrap, find_zone, list, multiarray, predefined_coordinate_zone, print_Space, store_nodes, update_zones}
+import lookupdata.{Find_data, actual_coordinate, actual_coordinate_zone, check_update_zone, coordinate_list, coordinate_zone, count_nodes_in_bootstrapmap, create_zone, create_zone_bootstrap, find_zone, list, multiarray, print_Space, store_nodes, update_zones}
 
 import scala.Int.{int2double, int2long}
 import scala.collection.mutable
@@ -11,9 +10,8 @@ import scala.math.Ordering.Implicits._
 import scala.util.control.Breaks.break
 
 /*
-/*
-CAN Implemetation approach
-*/*/
+//Chord Implementation idea was from "Mr.Abhijeet"  .
+*/
 object lookupdata {
 
   case class Find_data(key: String, ref: ActorSelection, key_Actor: mutable.HashMap[Int, String], numbernodes: Int) //key value pair
@@ -27,10 +25,9 @@ object lookupdata {
   var coordinate_zone = new mutable.HashMap[String, ListBuffer[Tuple2[Int, Int]]]()
   var actual_coordinate_zone = new mutable.HashMap[String, ListBuffer[Tuple2[Int, Int]]]()
 
-  var predefined_coordinate_zone = new mutable.HashMap[Int, ListBuffer[Tuple2[Int, Int]]]()
+  var idk_coordinate_zone = new mutable.HashMap[Tuple2[Int, Int], ListBuffer[Tuple2[Int, Int]]]()
 
-
-  var actual_coordinate = new mutable.HashMap[String, ListBuffer[Int]]()
+  var actual_coordinate = new mutable.HashMap[String, ListBuffer[Tuple2[Int,Int]]]()
 
   var store_nodes = new mutable.HashMap[Int, String]()
 
@@ -55,138 +52,104 @@ object lookupdata {
 
   var coordinate_list = new ListBuffer[Int];
   var list = new ListBuffer[Tuple2[Int, Int]]; //contains the zones of each node actor including the bootstrap itself
-  //(x1,y1)(x2,y2)
+
   def find_zone(x: Int, y: Int) = {
 
   }
 
-  def check_update_zone(x:Int,y:Int,store_nodes:mutable.HashMap[Int, String],actual_Cordinates:mutable.HashMap[String, ListBuffer[Tuple2[Int, Int]]]) = {
-    /*
-      X - coordinate
-      Y - coordinate
+  def check_update_zone(x:Int,y:Int,storenodes:mutable.HashMap[Int, String],path:String):String = {
     //TODO: STORE KEY VALUE AT THE INDEX
-     */
-    var counting=0;
+    var list = new ListBuffer[Tuple2[Int, Int]]; //contains the zones of each node actor including the bootstrap itself
+    //This is the case where we have only one Node in  the Grid
     var x_coordinate = false
     var y_coordinate = false
+    var prev_lower_bound_X = 0;
+
     var lower_bound_X = 0;
-    var lower_bound_y=0
-    var upper_bound_x=0
-    var upper_bound_y=0
+    var lower_bound_y = 0
+    var upper_bound_x = 0
+    var upper_bound_y = 0
+    var count = 0
+    if (storenodes.size == 1) {
+      LOGGER.info("Okay this is the case of Bootstrap_node")
+      list.addOne(0, multiarray.length-1)
+      list.addOne(0, multiarray.length-1)
+      actual_coordinate_zone.put(storenodes(0), list)
+    } else {
+      for (i <- 0 until storenodes.size-1) {
 
-    if(store_nodes.size==1){ //means we only have 1 node here
-        for(count <- 0 until predefined_coordinate_zone.size){
-          predefined_coordinate_zone(count).foreach(
-            value =>
-              {
-                //Is it in this node
-                if(counting==0) {
-                  if (value._1 <= x && x < value._2) {
-
-                    LOGGER.info("Pre-defined zones" + value)
-                    x_coordinate = true
-                  }
-                }else{
-                  if(value._1 <= y  && y < value._2){
-
-                    LOGGER.info("Pre-defined zones" + value)
-                    y_coordinate = true
-                  }
+          actual_coordinate_zone(storenodes(i)).foreach(
+            value => {
+              if (count % 2 == 0) {
+                if (value._1 <= x && value._2 >= x) {
+                  x_coordinate = true
+                  prev_lower_bound_X = value._1
+                  lower_bound_X = value._1
+                  upper_bound_x = value._2
                 }
-
-                if(x_coordinate&&y_coordinate){
-                  //update the zone for this
-                      //first step check the number of nodes in this zone
-                      // second
-                   actual_Cordinates.put(store_nodes(count), predefined_coordinate_zone(count))
-                  x_coordinate = false
-                  y_coordinate = false
-                }
-                counting +=1
               }
+              else {
+                if (value._1 <= y && value._2 >= y) {
+                  y_coordinate = true
+                  lower_bound_y = value._1
+                  upper_bound_y = value._2
+
+                }
+              }
+              if(x_coordinate&&y_coordinate&&prev_lower_bound_X==x){
+                LOGGER.info("do the horizontal split")
+                  lower_bound_y = (lower_bound_y+upper_bound_y)/2
+                  list.addOne(lower_bound_X,upper_bound_x)
+                list.addOne(lower_bound_y,upper_bound_y)
+                actual_coordinate_zone.put(storenodes(i),list)
+                update_zones(prev_lower_bound_X,lower_bound_X,lower_bound_y,upper_bound_y,path) //here path is basically the path of the newly created node
+                x_coordinate = false
+                y_coordinate = false
+
+                return  (storenodes(i)) //return the path that
+              }
+              if (x_coordinate && y_coordinate) {
+                //split the zone in half
+                lower_bound_X = (lower_bound_X + upper_bound_x) / 2 //the upper bound for this coordinate will be the lower bound for next
+                list.addOne(lower_bound_X, upper_bound_x)
+                list.addOne(lower_bound_y, upper_bound_y)
+                actual_coordinate_zone.put(storenodes(i),list)
+                 update_zones(prev_lower_bound_X,lower_bound_X,lower_bound_y,upper_bound_y,path) //here path is basically the path of the newly created node
+                x_coordinate = false
+                y_coordinate = false
+
+                return  (storenodes(i)) //return the path that
+
+              }
+              count += 1
+            }
           )
-
         }
-      }else{
-      for(count <- 0 until predefined_coordinate_zone.size){
-        var x_coordinate = false
-        var y_coordinate = false
-        predefined_coordinate_zone(count).foreach(
-          value =>
-          {
-            //Is it in this node
-            if(counting%2==0) { //even sequence
-              if (value._1 <= x && x <= value._2) {
-
-                LOGGER.info("Pre-defined zones" + value)
-                x_coordinate = true
-              }
-            }else{
-              if(value._1 <= y  && y <= value._2){
-                y_coordinate = true
-              }
-            }
-            if(x_coordinate&&y_coordinate){
-              var list_trying = new ListBuffer[Tuple2[Int, Int]]
-              var new_count = 0
-              for (i <- 0 to 1) {
-                for (j <- 0 to 1) {
-                    if(multiarray(i)(j)!=0){
-                      list_trying.addOne(i,j) //add the index of the available node here in this particular zone
-                      LOGGER.info("Pre-defined zones" + list_trying)
-
-                    }
-                  }
-              }
-              //now is the part where you update the zones compare list(0)(1)
-
-              x_coordinate = false
-              y_coordinate = false
-            }
-            counting +=1
-          }
-        )
       }
-    }
-  }
+    return "nothing"
 
-
-
-  def update_zones(x:Int) = {
-    var pre_defined = new ListBuffer[Tuple2[Int, Int]]; //contains the zones of each node actor including the bootstrap itself
-      if(x==0){
-        pre_defined.addOne(0,1) //(x1,x2)
-        pre_defined.addOne(0,1) //(y1,y2)
-        predefined_coordinate_zone.put(x,pre_defined)
-      }
-
-    if(x==1){
-      pre_defined.addOne(2,3) //(x1,x2)
-      pre_defined.addOne(0,1) //(y1,y2)
-      predefined_coordinate_zone.put(x,pre_defined)
 
     }
 
-    if(x==2){
-      pre_defined.addOne(0,1) //(x1,x2)
-      pre_defined.addOne(2,3) //(y1,y2)
-      predefined_coordinate_zone.put(x,pre_defined)
 
-    }
 
-    if(x==3){
-      pre_defined.addOne(2,3) //(x1,x2)
-      pre_defined.addOne(2,3) //(y1,y2)
-      predefined_coordinate_zone.put(x,pre_defined)
 
-    }
+  def update_zones(lower_bound:Int , upper_bound:Int, lower_bound_y:Int,upper_bound_y:Int,path:String) = {
+    var list = new ListBuffer[Tuple2[Int, Int]]; //contains the zones of each node actor including the bootstrap itself
+
+      list.addOne(lower_bound,upper_bound)
+      list.addOne(lower_bound_y,upper_bound_y)
+      actual_coordinate_zone.put(path,list)
+
   }
 }
-
+/*
+CAN Implemetation approach
+*/
 
 class lookupdata extends Actor with ActorLogging {
 
-//how about if we maintain a map for each coordinate and their zone limits
+  //how about if we maintain a map for each coordinate and their zone limits
 
   def receive = {
 
@@ -195,59 +158,31 @@ class lookupdata extends Actor with ActorLogging {
       var coordinate_list = new ListBuffer[Int];
 
       //LOGGER.info("Zone created")
-        multiarray(x)(y) = 100 //originally we will store the key,value index here but for now store any random value
+      multiarray(x)(y) = 100 //originally we will store the key,value index here but for now store any random value
       /*
       so we have to pass a key and in the given index we will store a map<K,V>
-
       store all the nodes in a list and then randomly choose a number
       then use that number to get the index from the list so this way you will be accessing the current active node randomly
-
        For Split
-
        to check wether we should do a vertical or horizontal
-      TODO: For vertical:
-                We will check if the new node point is parallel to the current node (meaning if its not the same column then vertical split)
-       For Horizontal:
-                We will check if the new node point is below the current node (meaning if its in the same column then Horizontal split)
-                Creating routing table "KEEP TRACK OF NEIGHBOURS"
 
-        Also, make sure to check we don't cross other nodes zone  (check their zones and compare with yours using the map that stores all the info)
        */
-      for(x <- 0 to multiarray.length) {
-        update_zones(x)
-      }
-
+      LOGGER.info(Integer.toString(multiarray(x)(y)))
       if(count_nodes_in_bootstrapmap==0) { //just only once
-        list.addOne(0, 1) //4x4 x
-        list.addOne(0, 4)//y
-        coordinate_list.addOne(x)
-        coordinate_list.addOne(y)
-
-        actual_coordinate.put(path.toString,coordinate_list)
-        actual_coordinate_zone.put(path.toString, list) //this list will be the one to get updated
         store_nodes.put(count_nodes_in_bootstrapmap, path.toString()) //store the nodes
-        check_update_zone(x,y,store_nodes,actual_coordinate_zone) //returns the zone
+          list1.addOne(x,y)
+          actual_coordinate.put(path.toString,list1)
+        check_update_zone(x,y,store_nodes,path.toString)
 
       }
       if(count_nodes_in_bootstrapmap>0) {
         store_nodes.put(count_nodes_in_bootstrapmap, path.toString()) //store the nodes
+        list1.addOne(x,y)
+        actual_coordinate.put(path.toString,list1)
 
-        list1.addOne((0, x))
-        list1.addOne((0, y)) //this list have the bootstrap node zone
-        //In check zone where this current coordinates lands
-        coordinate_list.addOne(x)
-        coordinate_list.addOne(y)
-
-        actual_coordinate.put(path.toString,coordinate_list)
-        actual_coordinate_zone.put(path.toString, list1) //this list will be the one to get updated
-
-        check_update_zone(x,y,store_nodes,actual_coordinate_zone) //returns the zone
-
-
-
-        LOGGER.info("Bootstrap" + coordinate_zone)
-        LOGGER.info("Nodes" + actual_coordinate_zone)
-        LOGGER.info("Actual coordinate" + actual_coordinate)
+        var new_path = check_update_zone(x,y,store_nodes,path.toString)
+        LOGGER.info("All coordinates "+ actual_coordinate)
+        LOGGER.info("So this is the updated version just with vertical "+ actual_coordinate_zone)
 
       }
       //LOGGER.info("So How many nodes we have now in the list returned by bootstrap: " + list )
@@ -257,22 +192,22 @@ class lookupdata extends Actor with ActorLogging {
 
 
     case create_zone(x,y) =>{
-    // So, this part basically just notifies my bootstrap node about the newly created node
+      // So, this part basically just notifies my bootstrap node about the newly created node
 
       val selection = system.actorSelection(store_nodes(0)); //this is bootstrap node //domain name basically resolves to the IP address
-        selection!create_zone_bootstrap(x,y,self.path) //so self.path represents the newly created node
+      selection!create_zone_bootstrap(x,y,self.path) //so self.path represents the newly created node
       //LOGGER.info("So How many nodes we have now in the list returned by bootstrap: " + store_nodes.size)
 
-       var new_list= return_list() //returns the current active node map
-        var random = scala.util.Random
-          var range = random.nextInt(2)
+      var new_list= return_list() //returns the current active node map
+      var random = scala.util.Random
+      var range = random.nextInt(2)
 
-    //  LOGGER.info("The generated random number is: " + new_list(0) + " " + range + "Coordinates "  + coordinate_zone(new_list(0)) + " " + coordinate_zone(new_list(1))  )
+      //  LOGGER.info("The generated random number is: " + new_list(0) + " " + range + "Coordinates "  + coordinate_zone(new_list(0)) + " " + coordinate_zone(new_list(1))  )
       //now randomly choose x,y points to join the coordinates
       //also the above returned map will help us in identifying the zone restriction
       //now iterate over each node in the list to check whose zone the coordinates lies in
 
-    //  LOGGER.info("The coordinates are: " + x + " " + y )
+      //  LOGGER.info("The coordinates are: " + x + " " + y )
       //before this you have to update the zones of each nodes
 
       find_zone(x,y) //sending current nodes points we have to find the zone based on this
