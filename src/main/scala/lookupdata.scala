@@ -64,6 +64,8 @@ object lookupdata {
     var x_coordinate = false
     var y_coordinate = false
     var prev_lower_bound_X = 0;
+    var prev_lower_bound_y = 0;
+
 
     var lower_bound_X = 0;
     var lower_bound_y = 0
@@ -91,6 +93,7 @@ object lookupdata {
               else {
                 if (value._1 <= y && value._2 >= y) {
                   y_coordinate = true
+                  prev_lower_bound_y=value._1
                   lower_bound_y = value._1
                   upper_bound_y = value._2
 
@@ -100,9 +103,9 @@ object lookupdata {
                 LOGGER.info("do the horizontal split")
                   lower_bound_y = (lower_bound_y+upper_bound_y)/2
                   list.addOne(lower_bound_X,upper_bound_x)
-                list.addOne(lower_bound_y,upper_bound_y)
+                list.addOne(prev_lower_bound_y,lower_bound_y)
                 actual_coordinate_zone.put(storenodes(i),list)
-                update_zones(prev_lower_bound_X,lower_bound_X,lower_bound_y,upper_bound_y,path) //here path is basically the path of the newly created node
+                update_zones_horizontal(prev_lower_bound_X,lower_bound_X,lower_bound_y,upper_bound_y,path,prev_lower_bound_y) //here path is basically the path of the newly created node
                 x_coordinate = false
                 y_coordinate = false
 
@@ -111,7 +114,7 @@ object lookupdata {
               if (x_coordinate && y_coordinate) {
                 //split the zone in half
                 lower_bound_X = (lower_bound_X + upper_bound_x) / 2 //the upper bound for this coordinate will be the lower bound for next
-                list.addOne(lower_bound_X, upper_bound_x)
+                list.addOne(lower_bound_X+1, upper_bound_x)
                 list.addOne(lower_bound_y, upper_bound_y)
                 actual_coordinate_zone.put(storenodes(i),list)
                  update_zones(prev_lower_bound_X,lower_bound_X,lower_bound_y,upper_bound_y,path) //here path is basically the path of the newly created node
@@ -133,6 +136,14 @@ object lookupdata {
 
 
 
+  def update_zones_horizontal(lower_bound:Int , upper_bound:Int, lower_bound_y:Int,upper_bound_y:Int,path:String,prev_lowerbound:Int) = {
+    var list = new ListBuffer[Tuple2[Int, Int]]; //contains the zones of each node actor including the bootstrap itself
+
+    list.addOne(lower_bound,upper_bound)
+    list.addOne(lower_bound_y,upper_bound_y)
+    actual_coordinate_zone.put(path,list)
+
+  }
 
   def update_zones(lower_bound:Int , upper_bound:Int, lower_bound_y:Int,upper_bound_y:Int,path:String) = {
     var list = new ListBuffer[Tuple2[Int, Int]]; //contains the zones of each node actor including the bootstrap itself
@@ -142,6 +153,7 @@ object lookupdata {
       actual_coordinate_zone.put(path,list)
 
   }
+
 }
 /*
 CAN Implemetation approach

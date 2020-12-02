@@ -102,7 +102,7 @@ once we return the list then we will add the new joining node to the list
     node!lookupdata.create_zone(1,2)
 
   }
-    //for horizontal split
+
   createserver_2()
   def createserver_2()= {
     LOGGER.info("Creating Server(Actor) Nodes")
@@ -111,6 +111,18 @@ once we return the list then we will add the new joining node to the list
     implicit val timeout = Timeout(5 seconds)
 
     val node = system.actorOf(Props[lookupdata],"nodeactor"+2)
+    node!lookupdata.create_zone(1,3)
+
+  }
+  //for horizontal split
+  createserver_3()
+  def createserver_3()= {
+    LOGGER.info("Creating Server(Actor) Nodes")
+
+    Thread.sleep(1500) //1.5 sec delay
+    implicit val timeout = Timeout(5 seconds)
+
+    val node = system.actorOf(Props[lookupdata],"nodeactor"+3)
     node!lookupdata.create_zone(1,3)
 
   }
