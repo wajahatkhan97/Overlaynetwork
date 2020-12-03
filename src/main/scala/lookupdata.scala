@@ -10,7 +10,7 @@ import scala.math.Ordering.Implicits._
 import scala.util.control.Breaks.break
 
 /*
-//Chord Implementation idea was from "Mr.Abhijeet"  .
+//CAN Implementation .
 */
 object lookupdata {
 
@@ -278,6 +278,7 @@ class lookupdata extends Actor with ActorLogging {
                 routing_table_global = routing_table1
                 return routing_table1
       }
+
     case Find_data(key, ref, keyactor_path, numbernodes) => {
 
     }
