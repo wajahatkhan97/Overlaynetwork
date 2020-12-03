@@ -1,7 +1,7 @@
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSelection, Props}
-import MyTesting.{LOGGER, MD5, akka, server_Data, system}
+import MyTesting.{LOGGER, MD5, akka, all_nodes_paths, system}
 import com.typesafe.config.ConfigFactory
-import lookupdata.{Find_data, actual_coordinate, actual_coordinate_zone, check_update_zone, coordinate_list, coordinate_zone, count_nodes_in_bootstrapmap, create_zone, create_zone_bootstrap, find_zone, list, multiarray, print_Space, store_nodes, update_zones}
+import lookupdata.{Find_data, actual_coordinate, actual_coordinate_zone, check_update_zone, coordinate_list, coordinate_zone, copy_routing, count_nodes_in_bootstrapmap, create_zone, create_zone_bootstrap, find_zone, list, multiarray, print_Space, routing_table, routing_table_global, store_nodes, update_zones}
 
 import scala.Int.{int2double, int2long}
 import scala.collection.mutable
@@ -16,9 +16,9 @@ object lookupdata {
 
   case class Find_data(key: String, ref: ActorSelection, key_Actor: mutable.HashMap[Int, String], numbernodes: Int) //key value pair
   case class create_zone_bootstrap(x: Int, y: Int, path: ActorPath)
-
   case class create_zone(x: Int, y: Int)
-
+  case class routing_table(coordinates:Tuple2[Int,Int],Path:String)
+  case class copy_routing(coordinates:Tuple2[Int,Int],path:String)
   var x = 4; //width
   var y = 4; //height
   var count_nodes_in_bootstrapmap = 0
@@ -28,7 +28,7 @@ object lookupdata {
   var idk_coordinate_zone = new mutable.HashMap[Tuple2[Int, Int], ListBuffer[Tuple2[Int, Int]]]()
 
   var actual_coordinate = new mutable.HashMap[String, ListBuffer[Tuple2[Int,Int]]]()
-
+  var routing_table_global = new mutable.HashMap[Tuple2[Int,Int],String]()
   var store_nodes = new mutable.HashMap[Int, String]()
 
   //2-D ARRAY
@@ -106,6 +106,7 @@ object lookupdata {
                 list.addOne(prev_lower_bound_y,lower_bound_y)
                 actual_coordinate_zone.put(storenodes(i),list)
                 update_zones_horizontal(prev_lower_bound_X,lower_bound_X,lower_bound_y,upper_bound_y,path,prev_lower_bound_y) //here path is basically the path of the newly created node
+
                 x_coordinate = false
                 y_coordinate = false
 
@@ -162,8 +163,52 @@ CAN Implemetation approach
 class lookupdata extends Actor with ActorLogging {
 
   //how about if we maintain a map for each coordinate and their zone limits
+    var routing_table1 = new mutable.HashMap[Tuple2[Int,Int],String]()
+
 
   def receive = {
+
+    case copy_routing(coordinates,path)=>{
+       routing_table1.put(coordinates,path) //this way we will be only 1 nodes routing table
+        LOGGER.info("routing table for: " + path + routing_table1)
+    }
+   case routing_table(coordinates,path)=>{
+
+     LOGGER.info("Updating the neighbours")
+     if(store_nodes.size==1){
+       routing_table1.put(coordinates,path)
+     }
+     else{
+       //check left,right,up,down
+       if(routing_table1.contains((coordinates._1-1),coordinates._2)){
+         LOGGER.info("There is a neighbour on left")
+         var neighbour_path = system.actorSelection(routing_table1((coordinates._1-1),coordinates._2))
+         neighbour_path!copy_routing(coordinates,path)
+
+       }
+       if(routing_table1.contains((coordinates._1+1),coordinates._2)){
+          var neighbour_path = system.actorSelection(routing_table1((coordinates._1+1),coordinates._2))
+
+           routing_table1.put(coordinates,self.path.toString)
+
+         neighbour_path!copy_routing(coordinates,path)
+
+       }
+       if(routing_table1.contains((coordinates._1),(coordinates._2-1))){
+         LOGGER.info("There is a neighbour on up")
+         var neighbour_path = system.actorSelection(routing_table1((coordinates._1),coordinates._2-1))
+         neighbour_path!copy_routing(coordinates,path)
+
+       }
+       if(routing_table1.contains((coordinates._1),(coordinates._2+1))){
+         LOGGER.info("There is a neighbour on down")
+         var neighbour_path = system.actorSelection(routing_table1((coordinates._1),coordinates._2+1))
+         neighbour_path!copy_routing(coordinates,path)
+
+       }
+
+     }
+   }
 
     case create_zone_bootstrap(x,y,path)=>{
       var list1 = new ListBuffer[Tuple2[Int,Int]]; //contains the zones of each node actor including the bootstrap itself
@@ -185,17 +230,14 @@ class lookupdata extends Actor with ActorLogging {
           list1.addOne(x,y)
           actual_coordinate.put(path.toString,list1)
         check_update_zone(x,y,store_nodes,path.toString)
-
+        self ! routing_table((x,y),path.toString)
       }
       if(count_nodes_in_bootstrapmap>0) {
         store_nodes.put(count_nodes_in_bootstrapmap, path.toString()) //store the nodes
         list1.addOne(x,y)
         actual_coordinate.put(path.toString,list1)
-
         var new_path = check_update_zone(x,y,store_nodes,path.toString)
-        LOGGER.info("All coordinates "+ actual_coordinate)
-        LOGGER.info("So this is the updated version just with vertical "+ actual_coordinate_zone)
-
+          self ! routing_table((x,y),path.toString) //update the neighbours
       }
       //LOGGER.info("So How many nodes we have now in the list returned by bootstrap: " + list )
       count_nodes_in_bootstrapmap+=1;
@@ -214,6 +256,7 @@ class lookupdata extends Actor with ActorLogging {
       var random = scala.util.Random
       var range = random.nextInt(2)
 
+
       //  LOGGER.info("The generated random number is: " + new_list(0) + " " + range + "Coordinates "  + coordinate_zone(new_list(0)) + " " + coordinate_zone(new_list(1))  )
       //now randomly choose x,y points to join the coordinates
       //also the above returned map will help us in identifying the zone restriction
@@ -231,6 +274,10 @@ class lookupdata extends Actor with ActorLogging {
       }
     //compare the randomly generated point p and find which zone it resides in by going over the coordinateS_zone map and then return the path of that particular node
 
+      def return_routingtable():mutable.HashMap[Tuple2[Int,Int],String]={
+                routing_table_global = routing_table1
+                return routing_table1
+      }
     case Find_data(key, ref, keyactor_path, numbernodes) => {
 
     }

@@ -29,8 +29,8 @@ object MyTesting extends App {
 
   //case class add_node_to_ring(Key: String,ref:ActorRef ,path: ActorPath)
   val LOGGER = LoggerFactory.getLogger(classOf[Nothing])
-  val server_Data = ConfigFactory.load("servernodes.conf").getConfig("server_data")
-  val worker_Data = ConfigFactory.load("workernodes.conf").getConfig("worker_data")
+//  val server_Data = ConfigFactory.load("servernodes.conf").getConfig("server_data")
+//  val worker_Data = ConfigFactory.load("workernodes.conf").getConfig("worker_data")
   //Create Rectangle for the cartesian coordinate system with width and length of 10
   var x = 10; //width
   var y = 10; //height
@@ -87,7 +87,7 @@ once we return the list then we will add the new joining node to the list
     implicit val timeout = Timeout(5 seconds)
 
     val node = system.actorOf(Props[lookupdata],"nodeactor")
-    node!lookupdata.create_zone(2,1)
+    node!lookupdata.create_zone(2,2)
 
   }
   createserver_1()
