@@ -87,6 +87,7 @@ once we return the list then we will add the new joining node to the list
     implicit val timeout = Timeout(5 seconds)
 
     val node = system.actorOf(Props[lookupdata],"nodeactor")
+//    now randomly choose x,y points to join the coordinates
     node!lookupdata.create_zone(2,2)
 
   }
@@ -99,6 +100,7 @@ once we return the list then we will add the new joining node to the list
     implicit val timeout = Timeout(5 seconds)
 
     val node = system.actorOf(Props[lookupdata],"nodeactor"+1)
+    //now randomly choose x,y points to join the coordinates
     node!lookupdata.create_zone(1,2)
 
   }
@@ -111,6 +113,7 @@ once we return the list then we will add the new joining node to the list
     implicit val timeout = Timeout(5 seconds)
 
     val node = system.actorOf(Props[lookupdata],"nodeactor"+2)
+//now randomly choose x,y points to join the coordinates
     node!lookupdata.create_zone(1,3)
 
   }
@@ -123,6 +126,7 @@ once we return the list then we will add the new joining node to the list
     implicit val timeout = Timeout(5 seconds)
 
     val node = system.actorOf(Props[lookupdata],"nodeactor"+3)
+//now randomly choose x,y points to join the coordinates
     node!lookupdata.create_zone(1,3)
 
   }

@@ -11,6 +11,8 @@ import scala.util.control.Breaks.break
 
 /*
 //CAN Implementation .
+TODO: Node Failures/departure
+      Data Finding
 */
 object lookupdata {
 
@@ -173,7 +175,7 @@ class lookupdata extends Actor with ActorLogging {
         LOGGER.info("routing table for: " + path + routing_table1)
     }
    case routing_table(coordinates,path)=>{
-
+//few things need to be fix here
      LOGGER.info("Updating the neighbours")
      if(store_nodes.size==1){
        routing_table1.put(coordinates,path)
@@ -213,17 +215,15 @@ class lookupdata extends Actor with ActorLogging {
     case create_zone_bootstrap(x,y,path)=>{
       var list1 = new ListBuffer[Tuple2[Int,Int]]; //contains the zones of each node actor including the bootstrap itself
       var coordinate_list = new ListBuffer[Int];
+      var actual_pair = new mutable.HashMap[Int,Int]() //where string represents the path of node and key_value pair
+        var store_pair = new mutable.HashMap[String,mutable.HashMap[Int,Int]]() //where string represents the path of node and key_value pair
+    //  TODO: store the (key,value) pair with the path
 
-      //LOGGER.info("Zone created")
       multiarray(x)(y) = 100 //originally we will store the key,value index here but for now store any random value
-      /*
-      so we have to pass a key and in the given index we will store a map<K,V>
-      store all the nodes in a list and then randomly choose a number
-      then use that number to get the index from the list so this way you will be accessing the current active node randomly
-       For Split
-       to check wether we should do a vertical or horizontal
+        //actual_pair.put(key,value);
+          //store_pair.put(path,actual_pair)
 
-       */
+
       LOGGER.info(Integer.toString(multiarray(x)(y)))
       if(count_nodes_in_bootstrapmap==0) { //just only once
         store_nodes.put(count_nodes_in_bootstrapmap, path.toString()) //store the nodes
@@ -236,10 +236,9 @@ class lookupdata extends Actor with ActorLogging {
         store_nodes.put(count_nodes_in_bootstrapmap, path.toString()) //store the nodes
         list1.addOne(x,y)
         actual_coordinate.put(path.toString,list1)
-        var new_path = check_update_zone(x,y,store_nodes,path.toString)
+       check_update_zone(x,y,store_nodes,path.toString)
           self ! routing_table((x,y),path.toString) //update the neighbours
       }
-      //LOGGER.info("So How many nodes we have now in the list returned by bootstrap: " + list )
       count_nodes_in_bootstrapmap+=1;
 
     }
@@ -260,10 +259,6 @@ class lookupdata extends Actor with ActorLogging {
       //  LOGGER.info("The generated random number is: " + new_list(0) + " " + range + "Coordinates "  + coordinate_zone(new_list(0)) + " " + coordinate_zone(new_list(1))  )
       //now randomly choose x,y points to join the coordinates
       //also the above returned map will help us in identifying the zone restriction
-      //now iterate over each node in the list to check whose zone the coordinates lies in
-
-      //  LOGGER.info("The coordinates are: " + x + " " + y )
-      //before this you have to update the zones of each nodes
 
       find_zone(x,y) //sending current nodes points we have to find the zone based on this
     }
@@ -280,7 +275,10 @@ class lookupdata extends Actor with ActorLogging {
       }
 
     case Find_data(key, ref, keyactor_path, numbernodes) => {
-
+    /*
+    so for finding data we will first find the coordinates via the coordinates we will find the path and with the path we will retrieve the
+    key value pairs
+     */
     }
 
   }
