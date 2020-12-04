@@ -13,6 +13,7 @@ import lookupdata.store_nodes
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.DurationInt
 import scala.math.BigDecimal.int2bigDecimal
 import scala.language.postfixOps
@@ -26,7 +27,7 @@ object MyTesting extends App {
   case class ServerActor(title: String)
 
   var all_nodes_paths = new mutable.HashMap[Int,String]()
-
+   var list = new ListBuffer[Tuple2[Int,Int]]
   //case class add_node_to_ring(Key: String,ref:ActorRef ,path: ActorPath)
   val LOGGER = LoggerFactory.getLogger(classOf[Nothing])
 //  val server_Data = ConfigFactory.load("servernodes.conf").getConfig("server_data")
@@ -61,8 +62,14 @@ object MyTesting extends App {
     val Ip_address  = "127.0.0.1" //Ip address for Bootstrap nodes
     var hashValue = MD5(Ip_address)
         DNS_map.put(0,Bootstrap_node.path.toString)
-
-    Bootstrap_node! lookupdata.create_zone_bootstrap(3,2,Bootstrap_node.path)
+    var x =3
+    var y =2
+    if(!list.contains((x,y))) {
+      list.addOne((x,y))
+      Bootstrap_node! lookupdata.create_zone_bootstrap(3,2,Bootstrap_node.path)
+    }else{
+      LOGGER.info("Node Already exist")
+    }
 /*
 //Bootstrap_node_m(Bootstrap_node.path.toString,Bootstrap_node.ref)
 we also have to consider the possibility of node leaving the zone. So split it in such order that if any node leaves the space we can re-merge the zones.
@@ -88,8 +95,14 @@ once we return the list then we will add the new joining node to the list
 
     val node = system.actorOf(Props[lookupdata],"nodeactor")
 //    now randomly choose x,y points to join the coordinates
-    node!lookupdata.create_zone(2,2)
-
+    var x =2
+    var y =2
+    if(!list.contains((x,y))) {
+      list.addOne((x, y))
+      node ! lookupdata.create_zone(2, 2)
+    }else{
+      LOGGER.info("Node Already exist")
+    }
   }
   createserver_1()
 
@@ -101,8 +114,14 @@ once we return the list then we will add the new joining node to the list
 
     val node = system.actorOf(Props[lookupdata],"nodeactor"+1)
     //now randomly choose x,y points to join the coordinates
-    node!lookupdata.create_zone(1,2)
-
+    var x =1
+    var y =2
+    if(!list.contains((x,y))) {
+      list.addOne((x, y))
+      node ! lookupdata.create_zone(1, 2)
+    }else{
+      LOGGER.info("Node Already exist")
+    }
   }
 
   createserver_2()
@@ -114,8 +133,14 @@ once we return the list then we will add the new joining node to the list
 
     val node = system.actorOf(Props[lookupdata],"nodeactor"+2)
 //now randomly choose x,y points to join the coordinates
-    node!lookupdata.create_zone(1,3)
-
+    var x =1
+    var y =3
+    if(!list.contains((x,y))) {
+      list.addOne((x, y))
+      node ! lookupdata.create_zone(1, 3)
+    }else{
+      LOGGER.info("Node Already exist")
+    }
   }
   //for horizontal split
   createserver_3()
@@ -127,8 +152,14 @@ once we return the list then we will add the new joining node to the list
 
     val node = system.actorOf(Props[lookupdata],"nodeactor"+3)
 //now randomly choose x,y points to join the coordinates
-    node!lookupdata.create_zone(1,3)
-
+    var x =2
+    var y =3
+    if(!list.contains((x,y))) {
+      list.addOne((x, y))
+      node ! lookupdata.create_zone(2, 3)
+    }else{
+      LOGGER.info("Node Already exist")
+    }
   }
 
   }
