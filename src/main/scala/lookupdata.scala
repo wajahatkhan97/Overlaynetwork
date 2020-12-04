@@ -293,12 +293,16 @@ class lookupdata extends Actor with ActorLogging {
 ////        routing_table_global = routing_table1
 ////        return routing_table1
 //      }
-
+//Note: Routing table fixed
     case Find_data(key, ref, keyactor_path, numbernodes) => {
       /*
       so for finding data we will first find the coordinates via the coordinates we will find the path and with the path we will retrieve the
       key value pairs
+
        */
+
+
+
     }
 
   }
