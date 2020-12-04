@@ -18,7 +18,7 @@ object lookupdata {
 
   case class Find_data(key: String, ref: ActorSelection, key_Actor: mutable.HashMap[Int, String], numbernodes: Int) //key value pair
   case class create_zone_bootstrap(x: Int, y: Int, path: ActorPath)
-  case class create_zone(x: Int, y: Int)
+  case class create_zone(x: Int, y: Int,key:Int,Value:Int)
   case class routing_table(coordinates:Tuple2[Int,Int],Path:String)
   case class copy_routing(coordinates:Tuple2[Int,Int],path:String)
   var x = 4; //width
@@ -168,7 +168,8 @@ class lookupdata extends Actor with ActorLogging {
   //how about if we maintain a map for each coordinate and their zone limits
   var routing_table1 = new mutable.HashMap[Tuple2[Int,Int],String]()
 
-
+  var actual_pair = new mutable.HashMap[Int,Int]() //where string represents the path of node and key_value pair
+  var store_pair = new mutable.HashMap[String,mutable.HashMap[Int,Int]]() //where string represents the path of node and key_value pair
 
   def receive = {
 
@@ -238,8 +239,7 @@ class lookupdata extends Actor with ActorLogging {
     case create_zone_bootstrap(x,y,path)=>{
       var list1 = new ListBuffer[Tuple2[Int,Int]]; //contains the zones of each node actor including the bootstrap itself
       var coordinate_list = new ListBuffer[Int];
-      var actual_pair = new mutable.HashMap[Int,Int]() //where string represents the path of node and key_value pair
-      var store_pair = new mutable.HashMap[String,mutable.HashMap[Int,Int]]() //where string represents the path of node and key_value pair
+
       //  TODO: store the (key,value) pair with the path
       multiarray(x)(y) = 100 //originally we will store the key,value index here but for now store any random value
       //actual_pair.put(key,value);
@@ -267,8 +267,13 @@ class lookupdata extends Actor with ActorLogging {
     }
 
 
-    case create_zone(x,y) =>{
+    case create_zone(x,y,key,value) =>{
       val selection = system.actorSelection(store_nodes(0)); //this is bootstrap node //domain name basically resolves to the IP address
+//      var actual_pair = new mutable.HashMap[Int,Int]() //where string represents the path of node and key_value pair
+//      var store_pair = new mutable.HashMap[String,mutable.HashMap[Int,Int]]() //where string represents the path of node and key_value pair
+
+        actual_pair.put(key,value)
+      store_pair.put(self.path.toString,actual_pair)
       selection!create_zone_bootstrap(x,y,self.path) //so self.path represents the newly created node
 
       var new_list= return_list() //returns the current active node map
@@ -280,7 +285,7 @@ class lookupdata extends Actor with ActorLogging {
       //now randomly choose x,y points to join the coordinates
       //also the above returned map will help us in identifying the zone restriction
 
-      find_zone(x,y) //sending current nodes points we have to find the zone based on this
+
     }
 
       def return_list():mutable.HashMap[Int,String]={
@@ -289,10 +294,7 @@ class lookupdata extends Actor with ActorLogging {
       }
       //compare the randomly generated point p and find which zone it resides in by going over the coordinateS_zone map and then return the path of that particular node
 
-//      def return_routingtable():mutable.HashMap[Tuple2[Int,Int],String]={
-////        routing_table_global = routing_table1
-////        return routing_table1
-//      }
+
 //Note: Routing table fixed
     case Find_data(key, ref, keyactor_path, numbernodes) => {
       /*

@@ -28,6 +28,9 @@ object MyTesting extends App {
 
   var all_nodes_paths = new mutable.HashMap[Int,String]()
    var list = new ListBuffer[Tuple2[Int,Int]]
+    var movie_titles =  List[String] ("movie1","movie2","movie3")
+  var movie_objects =  List[String] ("12","13","14")
+
   //case class add_node_to_ring(Key: String,ref:ActorRef ,path: ActorPath)
   val LOGGER = LoggerFactory.getLogger(classOf[Nothing])
 //  val server_Data = ConfigFactory.load("servernodes.conf").getConfig("server_data")
@@ -99,7 +102,10 @@ once we return the list then we will add the new joining node to the list
     var y =2
     if(!list.contains((x,y))) {
       list.addOne((x, y))
-      node ! lookupdata.create_zone(2, 2)
+      var hashValue_movietitle = MD5(movie_titles(0))
+      var hashValue_movieobjects = MD5(movie_objects(0))
+
+      node ! lookupdata.create_zone(2, 2,hashValue_movietitle(0),hashValue_movieobjects(0))
     }else{
       LOGGER.info("Node Already exist")
     }
@@ -118,7 +124,10 @@ once we return the list then we will add the new joining node to the list
     var y =2
     if(!list.contains((x,y))) {
       list.addOne((x, y))
-      node ! lookupdata.create_zone(1, 2)
+      var hashValue_movietitle = MD5(movie_titles(1))
+      var hashValue_movieobjects = MD5(movie_objects(2))
+
+      node ! lookupdata.create_zone(1, 2,hashValue_movietitle(0),hashValue_movieobjects(0))
     }else{
       LOGGER.info("Node Already exist")
     }
@@ -137,7 +146,10 @@ once we return the list then we will add the new joining node to the list
     var y =3
     if(!list.contains((x,y))) {
       list.addOne((x, y))
-      node ! lookupdata.create_zone(1, 3)
+      var hashValue_movietitle = MD5(movie_titles(2))
+      var hashValue_movieobjects = MD5(movie_objects(2))
+
+      node ! lookupdata.create_zone(1, 3,hashValue_movietitle(0),hashValue_movieobjects(0))
     }else{
       LOGGER.info("Node Already exist")
     }
@@ -156,7 +168,7 @@ once we return the list then we will add the new joining node to the list
     var y =3
     if(!list.contains((x,y))) {
       list.addOne((x, y))
-      node ! lookupdata.create_zone(2, 3)
+      node ! lookupdata.create_zone(2, 3,0,0)
     }else{
       LOGGER.info("Node Already exist")
     }
