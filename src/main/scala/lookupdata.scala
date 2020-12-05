@@ -162,11 +162,10 @@ object lookupdata {
       store_nodes.foreach(
         value =>{
           LOGGER.info("Path " + value._2 + " " + lookupdata.actual_coordinate(value._2))
-
-
         }
       )
   }
+
 }
 
 
@@ -184,68 +183,58 @@ class lookupdata extends Actor with ActorLogging {
 
   def receive = {
 
-    case copy_routing(coordinates,path)=>{
-      routing_table_global.put(coordinates,path) //
-     // LOGGER.info("routing table for global: " + routing_table_global) //helper map
-      LOGGER.info("routing table for nodes: "  + routing_table1)
-
+    case copy_routing(coordinates, path) => {
+      routing_table_global.put(coordinates, path) //
     }
-    case routing_table(coordinates,path)=> {
+
+
+    case routing_table(coordinates, path) => {
       //few things need to be fix here
       // LOGGER.info("Updating the neighbours")
-      if (store_nodes.size == 1) {
-        routing_table_global.put(coordinates, path) //this is global
-        routing_table1.put(coordinates, path) //this is resticted to specific nodes
-        LOGGER.info("routing table for nodes: "  + routing_table1)
+      routing_table1 = update(coordinates, path)
+   //   LOGGER.info("routing table for nodes: " + path + "  " + routing_table1)
 
-      }
+    }
 
-      else {
-            //check left,right,up,down
-            if (routing_table_global.contains((coordinates._1 - 1), coordinates._2)) {
+      def update(coordinates: Tuple2[Int, Int], path: String): mutable.HashMap[Tuple2[Int, Int], String] = {
+        if (store_nodes.size == 1) {
+          routing_table_global.put(coordinates, path) //this is global
+          routing_table1.put(coordinates, path) //this is resticted to specific nodes
+        }
 
-              var neighbour_path = system.actorSelection(routing_table_global((coordinates._1 - 1), coordinates._2))
-              routing_table1.put(coordinates, path)
-              //routing_table1.put((coordinates._1 - 1, coordinates._2), neighbour_path.pathString)
- //             neighbour_path ! copy_routing(coordinates, path)
-              LOGGER.info("routing table for nodes: "  + routing_table1)
+        else {
+          //check left,right,up,down
+         // LOGGER.info("Path " + path + "  " + coordinates )
 
-            }
-            if (routing_table_global.contains((coordinates._1 + 1), coordinates._2)) {
+          if (routing_table_global.contains((coordinates._1 - 1), coordinates._2)) {
 
-              var neighbour_path = system.actorSelection(routing_table_global((coordinates._1 + 1), coordinates._2))
-
-              routing_table1.put(coordinates, path)
-           //   routing_table1.put((coordinates._1 + 1, coordinates._2), neighbour_path.pathString)
-
-           //   neighbour_path ! copy_routing(coordinates, path)
-              LOGGER.info("routing table for nodes: "  + routing_table1)
-
-
-            }
-            if (routing_table_global.contains((coordinates._1), (coordinates._2 - 1))) {
-
-              var neighbour_path = system.actorSelection(routing_table_global((coordinates._1), coordinates._2 - 1))
-              routing_table1.put(coordinates, path)
-             // routing_table1.put((coordinates._1, coordinates._2 - 1), neighbour_path.pathString)
-            //  neighbour_path ! copy_routing(coordinates, path)
-              LOGGER.info("routing table for nodes: " + routing_table1)
-
-            }
-            if (routing_table_global.contains((coordinates._1), (coordinates._2 + 1))) {
-              //          LOGGER.info("There is a neighbour down")
-              //          LOGGER.info(self.path.toString)
-
-              var neighbour_path = system.actorSelection(routing_table_global((coordinates._1), coordinates._2 + 1))
-              routing_table1.put(coordinates, path)
-              //routing_table1.put((coordinates._1, coordinates._2 + 1), neighbour_path.pathString)
-            //  neighbour_path ! copy_routing(coordinates, path)
-              LOGGER.info("routing table for nodes: " + routing_table1)
-
-            }
+            var neighbour_path = system.actorSelection(routing_table_global((coordinates._1 - 1), coordinates._2))
+            routing_table1.put(((coordinates._1 - 1), coordinates._2), neighbour_path.pathString)
 
           }
+          if (routing_table_global.contains((coordinates._1 + 1), coordinates._2)) {
+
+            var neighbour_path = system.actorSelection(routing_table_global((coordinates._1 + 1), coordinates._2))
+
+            routing_table1.put(((coordinates._1 + 1), coordinates._2), neighbour_path.pathString)
+
+          }
+          if (routing_table_global.contains((coordinates._1), (coordinates._2 - 1))) {
+
+            var neighbour_path = system.actorSelection(routing_table_global((coordinates._1), coordinates._2 - 1))
+            routing_table1.put(((coordinates._1), coordinates._2 - 1), neighbour_path.pathString)
+                    }
+          if (routing_table_global.contains((coordinates._1), (coordinates._2 + 1))) {
+
+            var neighbour_path = system.actorSelection(routing_table_global((coordinates._1), coordinates._2 + 1))
+            routing_table1.put(((coordinates._1), coordinates._2 + 1), neighbour_path.pathString)
+
+          }
+
+        }
+        return routing_table1
       }
+
 
     case create_zone_bootstrap(x,y,path)=>{
       //var list1 = Tuple2[Int,Int]; //contains the zones of each node actor including the bootstrap itself
@@ -278,10 +267,12 @@ class lookupdata extends Actor with ActorLogging {
 
         store_nodes.foreach(
         path=> {
-          var testing = context.actorSelection(path._2)
-          testing ! routing_table((x, y), path._2) //update the neighbours
+          var testing = system.actorSelection(path._2)
+          testing ! routing_table(actual_coordinate(path._2), path._2) //update the neighbours
+
         })
       }
+
       count_nodes_in_bootstrapmap+=1;
 
     }
@@ -324,15 +315,15 @@ class lookupdata extends Actor with ActorLogging {
        */
 
 
-
-      //      LOGGER.info(self.toString())
+           // LOGGER.info(self.toString())
 //
-//      if(routing_table1.contains(coordinates)){ //meaning we are in the zone of that specific node with point P(coordinates)
-//        var map = store_pair(self.path.toString)
-//        LOGGER.info("Found the value  " + map(key) )
-//      }else{
-//        //if coordinate is not in the current zone(routing table) check for closest neighbors
-//      }
+      if(routing_table1.contains(coordinates)){ //meaning we are in the zone of that specific node with point P(coordinates)
+        var map = store_pair(self.path.toString)
+        LOGGER.info("Found the value  " + map(key) )
+      }else{
+        //if coordinate is not in the current zone(routing table) check for closest neighbors
+
+      }
 
     }
 

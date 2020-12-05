@@ -9,6 +9,7 @@ import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSelection, Act
 import akka.pattern.ask
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
+import lookupdata.Find_data
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
@@ -16,7 +17,6 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.DurationInt
 import scala.math.BigDecimal.int2bigDecimal
 import scala.language.postfixOps
-
 import scala.util.control.Breaks.break
 //https://medium.com/@TamasPolgar/what-to-do-with-5-000-000-akka-actors-381a915a0f78 "referenced for storing data in node actor(hashmap)"
 object MyTesting extends App {
@@ -31,6 +31,7 @@ object MyTesting extends App {
     var movie_titles =  List[String] ("movie1","movie2","movie3")
   var movie_objects =  List[String] ("12","13","14")
   var store_paths = new ListBuffer[String]
+  var list_paths = new ListBuffer[String]
 
   //case class add_node_to_ring(Key: String,ref:ActorRef ,path: ActorPath)
   val LOGGER = LoggerFactory.getLogger(classOf[Nothing])
@@ -70,6 +71,8 @@ object MyTesting extends App {
     var y =2
     if(!list.contains((x,y))) {
       list.addOne((x,y))
+      list_paths.addOne(Bootstrap_node.path.toString)
+
       Bootstrap_node! lookupdata.create_zone_bootstrap(3,2,Bootstrap_node.path)
     }else{
       LOGGER.info("Node Already exist")
@@ -103,6 +106,7 @@ once we return the list then we will add the new joining node to the list
     var y =2
     if(!list.contains((x,y))) {
       list.addOne((x, y))
+      list_paths.addOne(node.path.toString)
       var hashValue_movietitle = MD5(movie_titles(0))
       var hashValue_movieobjects = MD5(movie_objects(0))
 
@@ -127,6 +131,7 @@ once we return the list then we will add the new joining node to the list
       list.addOne((x, y))
       var hashValue_movietitle = MD5(movie_titles(1))
       var hashValue_movieobjects = MD5(movie_objects(1))
+      list_paths.addOne(node.path.toString)
 
       node ! lookupdata.create_zone(1, 2,hashValue_movietitle(0),hashValue_movieobjects(0))
     }else{
@@ -138,7 +143,7 @@ once we return the list then we will add the new joining node to the list
   def createserver_2()= {
     LOGGER.info("Creating Server(Actor) Nodes")
 
-    Thread.sleep(1500) //1.5 sec delay
+   // Thread.sleep(1500) //1.5 sec delay
     implicit val timeout = Timeout(5 seconds)
 
     val node = system.actorOf(Props[lookupdata],"nodeactor"+2)
@@ -149,6 +154,7 @@ once we return the list then we will add the new joining node to the list
       list.addOne((x, y))
       var hashValue_movietitle = MD5(movie_titles(2))
       var hashValue_movieobjects = MD5(movie_objects(2))
+      list_paths.addOne(node.path.toString)
 
       node ! lookupdata.create_zone(1, 3,hashValue_movietitle(0),hashValue_movieobjects(0))
     }else{
@@ -160,7 +166,7 @@ once we return the list then we will add the new joining node to the list
   def createserver_3()= {
     LOGGER.info("Creating Server(Actor) Nodes")
 
-    Thread.sleep(1500) //1.5 sec delay
+   // Thread.sleep(1500) //1.5 sec delay
     implicit val timeout = Timeout(5 seconds)
 
     val node = system.actorOf(Props[lookupdata],"nodeactor"+3)
@@ -169,6 +175,8 @@ once we return the list then we will add the new joining node to the list
     var y =3
     if(!list.contains((x,y))) {
       list.addOne((x, y))
+      list_paths.addOne(node.path.toString)
+
       node ! lookupdata.create_zone(2, 3,0,0)
     }else{
       LOGGER.info("Node Already exist")
@@ -177,7 +185,9 @@ once we return the list then we will add the new joining node to the list
 usernode()
 def usernode(): Unit ={
 
-
+  val node = system.actorSelection(list_paths(3))
+  var hashValue_movietitle = MD5(movie_titles(2))
+      node!Find_data((1,3),hashValue_movietitle(0))
   }
 }
 
