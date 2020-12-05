@@ -352,6 +352,7 @@ class lookupdata extends Actor with ActorLogging {
 
       if(routing_table1.contains(coordinates)){ //meaning we are in the zone of that specific node with point P(coordinates)
         var path1 = routing_table1.get(coordinates).toString.replaceAll("Some","")
+
            var map = store_pair(path1.replaceAll("[(|)]",""))
         LOGGER.info("Found the value  " + map(key))
 
@@ -361,16 +362,16 @@ class lookupdata extends Actor with ActorLogging {
          var nearest= distance(coordinates,routing_table1) //choose the closest neighbour
 
        if(routing_table1.contains(nearest)) { //meaning we are in the zone of that specific node with point P(coordinates)
-         var path = routing_table1.get(nearest)
-         var new_actor = context.actorSelection(path.toString)
-         new_actor ! Find_data(coordinates, key)
+         var path = routing_table1.get(nearest).toString.replaceAll("Some","")
+         var checking = system.actorSelection(path.replaceAll("[(|)]",""))
+         checking ! Find_data(coordinates, key)
        }
         else{
          LOGGER.info(" Not Found ")
 
        }
       }
-
+//akka://UserServerActors/user/nodeactor3
     }
 
   }

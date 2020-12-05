@@ -183,13 +183,15 @@ once we return the list then we will add the new joining node to the list
       LOGGER.info("Node Already exist")
     }
   }
-usernode()
+  usernode()
 def usernode(): Unit ={
 
   val node = system.actorSelection(list_paths(3))
   var hashValue_movietitle = MD5(movie_titles(2))
-      node!Find_data((3,2),hashValue_movietitle(0))
+      node!Find_data((1,3),hashValue_movietitle(0))
   }
+  system.terminate()
+
 }
 
 
