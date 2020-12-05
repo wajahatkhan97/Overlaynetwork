@@ -1,12 +1,13 @@
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSelection, Props}
 import MyTesting.{LOGGER, MD5, akka, all_nodes_paths, system}
 import com.typesafe.config.ConfigFactory
-import lookupdata.{Find_data, actual_coordinate, actual_coordinate_zone, check_update_zone, coordinate_list, coordinate_zone, copy_routing, count_nodes_in_bootstrapmap, create_zone, create_zone_bootstrap, find_zone, i, list, multiarray, print_Space, routing_table, routing_table_global, store_nodes, update_routing, update_zones}
+import lookupdata.{Find_data, actual_coordinate, actual_coordinate_zone, check_update_zone, coordinate_list, coordinate_zone, copy_routing, count_nodes_in_bootstrapmap, create_zone, create_zone_bootstrap, distance, find_zone, i, list, multiarray, print_Space,  routing_table, routing_table_global, store_nodes, store_pair, update_routing, update_zones}
 
 import scala.Int.{int2double, int2long}
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.math.Ordering.Implicits._
+import scala.math.{pow, sqrt}
 import scala.util.control.Breaks.break
 
 /*
@@ -24,10 +25,11 @@ object lookupdata {
   var x = 4; //width
   var y = 4; //height
   var i=0
+  var store_pair = new mutable.HashMap[String,mutable.HashMap[Int,Int]]() //where string represents the path of node and key_value pair
+
   var count_nodes_in_bootstrapmap = 0
   var coordinate_zone = new mutable.HashMap[String, ListBuffer[Tuple2[Int, Int]]]()
   var actual_coordinate_zone = new mutable.HashMap[String, ListBuffer[Tuple2[Int, Int]]]()
-
   var idk_coordinate_zone = new mutable.HashMap[Tuple2[Int, Int], ListBuffer[Tuple2[Int, Int]]]()
 
   var actual_coordinate = new mutable.HashMap[String, Tuple2[Int,Int]]()
@@ -165,7 +167,26 @@ object lookupdata {
         }
       )
   }
+  def distance(tuple2: Tuple2[Int,Int]):Tuple2[Int,Int]={
 
+    var list = new ListBuffer[Double]
+      //(x2-x1)+(y2-y1)
+    //right
+   var right= sqrt(pow(tuple2._1+1 -tuple2._1, 2) + pow(tuple2._2 - tuple2._2, 2))
+    //left
+    var left = sqrt(pow(tuple2._1-1 -tuple2._1, 2) + pow(tuple2._2 - tuple2._2, 2))
+    //up
+    var up = sqrt(pow(tuple2._1 -tuple2._1, 2) + pow(tuple2._2-1 - tuple2._2, 2))
+    //down
+    var down = sqrt(pow(tuple2._1+1 -tuple2._1, 2) + pow(tuple2._2+1 - tuple2._2, 2))
+      list.addOne(right)
+    list.addOne(left)
+    list.addOne(up)
+    list.addOne(down)
+    var min = list.min
+      LOGGER.info("Minimum " + min)
+      return tuple2
+    }
 }
 
 
@@ -179,7 +200,6 @@ class lookupdata extends Actor with ActorLogging {
   var routing_table1 = new mutable.HashMap[Tuple2[Int,Int],String]()
 
   var actual_pair = new mutable.HashMap[Int,Int]() //where string represents the path of node and key_value pair
-  var store_pair = new mutable.HashMap[String,mutable.HashMap[Int,Int]]() //where string represents the path of node and key_value pair
 
   def receive = {
 
@@ -207,27 +227,28 @@ class lookupdata extends Actor with ActorLogging {
          // LOGGER.info("Path " + path + "  " + coordinates )
 
           if (routing_table_global.contains((coordinates._1 - 1), coordinates._2)) {
-
+              var paths= routing_table_global((coordinates._1 - 1), coordinates._2)
             var neighbour_path = system.actorSelection(routing_table_global((coordinates._1 - 1), coordinates._2))
-            routing_table1.put(((coordinates._1 - 1), coordinates._2), neighbour_path.pathString)
+            routing_table1.put(((coordinates._1 - 1), coordinates._2), paths)
 
           }
           if (routing_table_global.contains((coordinates._1 + 1), coordinates._2)) {
-
+            var paths = routing_table_global((coordinates._1 + 1), coordinates._2)
             var neighbour_path = system.actorSelection(routing_table_global((coordinates._1 + 1), coordinates._2))
 
-            routing_table1.put(((coordinates._1 + 1), coordinates._2), neighbour_path.pathString)
+            routing_table1.put(((coordinates._1 + 1), coordinates._2), paths)
 
           }
           if (routing_table_global.contains((coordinates._1), (coordinates._2 - 1))) {
-
+            var paths = routing_table_global((coordinates._1), coordinates._2 - 1)
             var neighbour_path = system.actorSelection(routing_table_global((coordinates._1), coordinates._2 - 1))
-            routing_table1.put(((coordinates._1), coordinates._2 - 1), neighbour_path.pathString)
-                    }
-          if (routing_table_global.contains((coordinates._1), (coordinates._2 + 1))) {
+            routing_table1.put(((coordinates._1), coordinates._2 - 1), paths)
 
+          }
+          if (routing_table_global.contains((coordinates._1), (coordinates._2 + 1))) {
+           var paths =  routing_table_global((coordinates._1), coordinates._2 + 1)
             var neighbour_path = system.actorSelection(routing_table_global((coordinates._1), coordinates._2 + 1))
-            routing_table1.put(((coordinates._1), coordinates._2 + 1), neighbour_path.pathString)
+            routing_table1.put(((coordinates._1), coordinates._2 + 1), paths)
 
           }
 
@@ -285,6 +306,7 @@ class lookupdata extends Actor with ActorLogging {
 
       actual_pair.put(key,value)
       store_pair.put(self.path.toString,actual_pair)
+      routing_table1.put((x,y),self.path.toString)
       selection!create_zone_bootstrap(x,y,self.path) //so self.path represents the newly created node
 
       var new_list= return_list() //returns the current active node map
@@ -307,21 +329,21 @@ class lookupdata extends Actor with ActorLogging {
 
 
     //Note: Routing table fixed
+
     case Find_data(coordinates,key) => {
       /*
       so for finding data we will first find the coordinates via the coordinates we will find the path and with the path we will retrieve the
       key value pairs
-
        */
-
-
-           // LOGGER.info(self.toString())
 //
       if(routing_table1.contains(coordinates)){ //meaning we are in the zone of that specific node with point P(coordinates)
-        var map = store_pair(self.path.toString)
-        LOGGER.info("Found the value  " + map(key) )
+        var path1 = routing_table1.get(coordinates).toString.replaceAll("Some","")
+           var map = store_pair(path1.replaceAll("[(|)]",""))
+        LOGGER.info("Found the value  " + map(key))
+
       }else{
         //if coordinate is not in the current zone(routing table) check for closest neighbors
+          distance(coordinates) //choose the closest neighbour
 
       }
 

@@ -176,8 +176,9 @@ once we return the list then we will add the new joining node to the list
     if(!list.contains((x,y))) {
       list.addOne((x, y))
       list_paths.addOne(node.path.toString)
+      var hashValue_movietitle = MD5(movie_titles(2))
 
-      node ! lookupdata.create_zone(2, 3,0,0)
+      node ! lookupdata.create_zone(2, 3,hashValue_movietitle(0),0)
     }else{
       LOGGER.info("Node Already exist")
     }
@@ -187,7 +188,7 @@ def usernode(): Unit ={
 
   val node = system.actorSelection(list_paths(3))
   var hashValue_movietitle = MD5(movie_titles(2))
-      node!Find_data((1,3),hashValue_movietitle(0))
+      node!Find_data((2,3),hashValue_movietitle(0))
   }
 }
 
