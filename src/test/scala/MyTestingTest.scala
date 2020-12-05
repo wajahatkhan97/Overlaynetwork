@@ -1,6 +1,5 @@
 import java.security.MessageDigest
 
-import MyTesting.{MD5, akka, system}
 import _root_.akka.actor.{ActorSystem, Props}
 import _root_.akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import _root_.akka.actor.typed.scaladsl.adapter.ClassicActorRefOps
