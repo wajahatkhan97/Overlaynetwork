@@ -9,7 +9,6 @@ import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSelection, Act
 import akka.pattern.ask
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import lookupdata.store_nodes
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
@@ -17,6 +16,7 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.DurationInt
 import scala.math.BigDecimal.int2bigDecimal
 import scala.language.postfixOps
+
 import scala.util.control.Breaks.break
 //https://medium.com/@TamasPolgar/what-to-do-with-5-000-000-akka-actors-381a915a0f78 "referenced for storing data in node actor(hashmap)"
 object MyTesting extends App {
@@ -30,6 +30,7 @@ object MyTesting extends App {
    var list = new ListBuffer[Tuple2[Int,Int]]
     var movie_titles =  List[String] ("movie1","movie2","movie3")
   var movie_objects =  List[String] ("12","13","14")
+  var store_paths = new ListBuffer[String]
 
   //case class add_node_to_ring(Key: String,ref:ActorRef ,path: ActorPath)
   val LOGGER = LoggerFactory.getLogger(classOf[Nothing])
@@ -125,7 +126,7 @@ once we return the list then we will add the new joining node to the list
     if(!list.contains((x,y))) {
       list.addOne((x, y))
       var hashValue_movietitle = MD5(movie_titles(1))
-      var hashValue_movieobjects = MD5(movie_objects(2))
+      var hashValue_movieobjects = MD5(movie_objects(1))
 
       node ! lookupdata.create_zone(1, 2,hashValue_movietitle(0),hashValue_movieobjects(0))
     }else{
@@ -173,8 +174,12 @@ once we return the list then we will add the new joining node to the list
       LOGGER.info("Node Already exist")
     }
   }
+usernode()
+def usernode(): Unit ={
+
 
   }
+}
 
 
 

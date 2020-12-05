@@ -16,7 +16,7 @@ TODO: Node Failures/departure
 */
 object lookupdata {
 
-  case class Find_data(key: String, ref: ActorSelection, key_Actor: mutable.HashMap[Int, String], numbernodes: Int) //key value pair
+  case class Find_data(coordinates:Tuple2[Int,Int],key:Int) //key value pair
   case class create_zone_bootstrap(x: Int, y: Int, path: ActorPath)
   case class create_zone(x: Int, y: Int,key:Int,Value:Int)
   case class routing_table(coordinates:Tuple2[Int,Int],Path:String)
@@ -158,7 +158,12 @@ object lookupdata {
 
   }
 
+  def node_failure()={
+
+  }
 }
+
+
 /*
 CAN Implemetation approach
 */
@@ -181,7 +186,7 @@ class lookupdata extends Actor with ActorLogging {
     }
     case routing_table(coordinates,path)=>{
       //few things need to be fix here
-     // LOGGER.info("Updating the neighbours")
+      // LOGGER.info("Updating the neighbours")
       if(store_nodes.size==1){
         routing_table_global.put(coordinates,path) //this is global
 
@@ -190,8 +195,8 @@ class lookupdata extends Actor with ActorLogging {
       else{
         //check left,right,up,down
         if(routing_table_global.contains((coordinates._1-1),coordinates._2)){
-//          LOGGER.info("There is a neighbour left")
-//          LOGGER.info(self.path.toString)
+          //          LOGGER.info("There is a neighbour left")
+          //          LOGGER.info(self.path.toString)
 
           var neighbour_path = system.actorSelection(routing_table_global((coordinates._1-1),coordinates._2))
           routing_table1.put(coordinates,path)
@@ -200,8 +205,8 @@ class lookupdata extends Actor with ActorLogging {
 
         }
         if(routing_table_global.contains((coordinates._1+1),coordinates._2)){
-//          LOGGER.info("There is a neighbour Right")
-//          LOGGER.info(self.path.toString)
+          //          LOGGER.info("There is a neighbour Right")
+          //          LOGGER.info(self.path.toString)
 
           var neighbour_path = system.actorSelection(routing_table_global((coordinates._1+1),coordinates._2))
 
@@ -212,8 +217,8 @@ class lookupdata extends Actor with ActorLogging {
 
         }
         if(routing_table_global.contains((coordinates._1),(coordinates._2-1))){
-//          LOGGER.info("There is a neighbour up")
-//          LOGGER.info(self.path.toString)
+          //          LOGGER.info("There is a neighbour up")
+          //          LOGGER.info(self.path.toString)
 
           var neighbour_path = system.actorSelection(routing_table_global((coordinates._1),coordinates._2-1))
           routing_table1.put(coordinates,path)
@@ -222,8 +227,8 @@ class lookupdata extends Actor with ActorLogging {
 
         }
         if(routing_table_global.contains((coordinates._1),(coordinates._2+1))){
-//          LOGGER.info("There is a neighbour down")
-//          LOGGER.info(self.path.toString)
+          //          LOGGER.info("There is a neighbour down")
+          //          LOGGER.info(self.path.toString)
 
           var neighbour_path = system.actorSelection(routing_table_global((coordinates._1),coordinates._2+1))
           routing_table1.put(coordinates,path)
@@ -269,10 +274,10 @@ class lookupdata extends Actor with ActorLogging {
 
     case create_zone(x,y,key,value) =>{
       val selection = system.actorSelection(store_nodes(0)); //this is bootstrap node //domain name basically resolves to the IP address
-//      var actual_pair = new mutable.HashMap[Int,Int]() //where string represents the path of node and key_value pair
-//      var store_pair = new mutable.HashMap[String,mutable.HashMap[Int,Int]]() //where string represents the path of node and key_value pair
+      //      var actual_pair = new mutable.HashMap[Int,Int]() //where string represents the path of node and key_value pair
+      //      var store_pair = new mutable.HashMap[String,mutable.HashMap[Int,Int]]() //where string represents the path of node and key_value pair
 
-        actual_pair.put(key,value)
+      actual_pair.put(key,value)
       store_pair.put(self.path.toString,actual_pair)
       selection!create_zone_bootstrap(x,y,self.path) //so self.path represents the newly created node
 
@@ -292,18 +297,25 @@ class lookupdata extends Actor with ActorLogging {
         return store_nodes //this will return the map that bootstrap node contains of all the active current active nodes.
         //random number generator will be work as key for this map
       }
-      //compare the randomly generated point p and find which zone it resides in by going over the coordinateS_zone map and then return the path of that particular node
+    //compare the randomly generated point p and find which zone it resides in by going over the coordinateS_zone map and then return the path of that particular node
 
 
-//Note: Routing table fixed
-    case Find_data(key, ref, keyactor_path, numbernodes) => {
+    //Note: Routing table fixed
+    case Find_data(coordinates,key) => {
       /*
       so for finding data we will first find the coordinates via the coordinates we will find the path and with the path we will retrieve the
       key value pairs
 
        */
+      LOGGER.info(self.toString())
 
+      if(routing_table1.contains(coordinates)){ //meaning we are in the zone of that specific node with point P(coordinates)
+        var map = store_pair(self.path.toString)
+        LOGGER.info("Found the value  " + map(key) )
+      }else{
+        //if coordinate is not in the current zone(routing table) check for closest neighbors
 
+      }
 
     }
 
