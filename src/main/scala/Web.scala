@@ -23,9 +23,8 @@ object Web {
           complete(HttpEntity(
             ContentTypes.`text/html(UTF-8)`,
             "<html><body> <a href=\"http://127.0.0.1:8080/addNode\">1. Add a Server Node</a><br> " +
-              "<a href=\"http://127.0.0.1:8080/loadData\">2. Load Data to Servers by Id</a><br> " +
+              "<a href=\"http://127.0.0.1:8080/loadData\">2. Delete Node</a><br> " +
               "<a href=\"http://127.0.0.1:8080/lookupData\">3. Lookup Data on Servers by Id</a><br> " +
-              "<a href=\"http://127.0.0.1:8080/getSnapshot\">4. Get System Snapshot</a><br> " +
               "</body></html>"))
         },
         path("addNode") {
