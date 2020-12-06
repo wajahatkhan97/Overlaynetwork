@@ -37,8 +37,8 @@ class MyTesting  {
   //  val server_Data = ConfigFactory.load("servernodes.conf").getConfig("server_data")
   //  val worker_Data = ConfigFactory.load("workernodes.conf").getConfig("worker_data")
   //Create Rectangle for the cartesian coordinate system with width and length of 10
-  var x = 10; //width
-  var y = 10; //height
+  var x = 4; //width
+  var y = 4; //height
   var DNS_map = new mutable.HashMap[Int,String]()
   class akka extends Actor with ActorLogging {
     var n = 0;
@@ -72,22 +72,11 @@ class MyTesting  {
       list.addOne((x,y))
       list_paths.addOne(Bootstrap_node.path.toString)
 
-      Bootstrap_node! lookupdata.create_zone_bootstrap(3,2,Bootstrap_node.path)
+      Bootstrap_node! lookupdata.create_zone_bootstrap(x,y,Bootstrap_node.path)
     }else{
       LOGGER.info("Node Already exist")
     }
-    /*
-    //Bootstrap_node_m(Bootstrap_node.path.toString,Bootstrap_node.ref)
-    we also have to consider the possibility of node leaving the zone. So split it in such order that if any node leaves the space we can re-merge the zones.
-    so bootstrap node will be updated with the nodes paths each time.
-    so there must be some kind of action that will return existing list of nodes from bootstrap
-    once we return the list then we will add the new joining node to the list
-     */
-
   }
-
-
-
   //createserver()
 
   def createserver()= {
@@ -106,9 +95,11 @@ class MyTesting  {
       var hashValue_movietitle = MD5(movie_titles(0))
       var hashValue_movieobjects = MD5(movie_objects(0))
 
-      node ! lookupdata.create_zone(2, 2,hashValue_movietitle(0),hashValue_movieobjects(0))
+      node ! lookupdata.create_zone(x, y,hashValue_movietitle(0),hashValue_movieobjects(0))
     }else{
       LOGGER.info("Node Already exist")
+      //have a variable here which will tells you if node creations fails
+
     }
   }
   //createserver_1()
@@ -129,7 +120,7 @@ class MyTesting  {
       var hashValue_movieobjects = MD5(movie_objects(1))
       list_paths.addOne(node.path.toString)
 
-      node ! lookupdata.create_zone(1, 2,hashValue_movietitle(0),hashValue_movieobjects(0))
+      node ! lookupdata.create_zone(x, y,hashValue_movietitle(0),hashValue_movieobjects(0))
     }else{
       LOGGER.info("Node Already exist")
     }
@@ -152,7 +143,7 @@ class MyTesting  {
       var hashValue_movieobjects = MD5(movie_objects(2))
       list_paths.addOne(node.path.toString)
 
-      node ! lookupdata.create_zone(1, 3,hashValue_movietitle(0),hashValue_movieobjects(0))
+      node ! lookupdata.create_zone(x, y,hashValue_movietitle(0),hashValue_movieobjects(0))
     }else{
       LOGGER.info("Node Already exist")
     }
@@ -174,7 +165,7 @@ class MyTesting  {
       list_paths.addOne(node.path.toString)
       var hashValue_movietitle = MD5(movie_titles(2))
 
-      node ! lookupdata.create_zone(2, 3,hashValue_movietitle(0),0)
+      node ! lookupdata.create_zone(x, y,hashValue_movietitle(0),0)
     }else{
       LOGGER.info("Node Already exist")
     }

@@ -306,7 +306,6 @@ class lookupdata extends Actor with ActorLogging {
           path=> {
             var testing = myTesting.system.actorSelection(path._2)
             testing ! routing_table(actual_coordinate(path._2), path._2) //update the neighbours
-
           })
       }
 
